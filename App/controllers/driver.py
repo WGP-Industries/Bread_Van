@@ -4,6 +4,25 @@ from datetime import datetime, timedelta
 
 # All driver-related business logic will be moved here as functions
 
+def create_driver(username, password, status="Offline", areaId=0, streetId=None):
+    existing_user = Driver.query.filter_by(username=username).first()
+    if existing_user:
+        raise ValueError("Username already taken.")
+    driver = Driver(username=username, password=password, status="Offline", areaId=0, streetId=None)
+    db.session.add(driver)
+    db.session.commit()
+    return driver
+
+def delete_driver(driver_id):
+    driver = Driver.query.get(driver_id)
+    if not driver:
+        raise ValueError("Invalid driver ID.")
+    db.session.delete(driver)
+    db.session.commit()
+    return driver
+
+
+
 def driver_schedule_drive(driver, area_id, street_id, date_str, time_str):
     try:
         date = datetime.strptime(date_str, "%Y-%m-%d").date()
@@ -17,6 +36,8 @@ def driver_schedule_drive(driver, area_id, street_id, date_str, time_str):
     if scheduled_datetime > one_year_later:
         raise ValueError("Cannot schedule a drive more than 60 days in advance.")
     existing_drive = Drive.query.filter_by(areaId=area_id, streetId=street_id, date=date).first()
+    if existing_drive:
+        raise ValueError("A drive is already scheduled for this area and street on the selected date.")
     new_drive = driver.schedule_drive(area_id, street_id, date_str, time_str)
     return new_drive
 

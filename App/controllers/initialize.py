@@ -1,47 +1,53 @@
 from App.database import db
-from App.models import Admin, Driver, Resident, Area, Street
+from App.models import Driver, Resident, Area, Street
+from App.database import db
+from App.models import Driver, Resident, Area, Street
+from App.controllers.area import create_area
+from App.controllers.street import create_street
+from App.controllers.driver import create_driver, delete_driver
+from App.controllers.resident import resident_create
+
 
 
 def initialize():
     db.drop_all()
     db.create_all()
 
-    #Creating Admin
-    admin = Admin(username="admin", password="adminpass")
-    db.session.add(admin)
-    db.session.commit()
+
 
     #Creating Areas and Streets
-    area1 = Area(name='St. Augustine')
+
+    area1 = create_area('St. Augustine')
     db.session.add(area1)
     db.session.commit()
 
-    street11 = Street(name="Gordon Street", areaId=area1.id)
-    street12 = Street(name="Warner Street", areaId=area1.id)
-    street13 = Street(name="College Road", areaId=area1.id)
+    
+    street11 = create_street(name="Gordon Street", areaId=area1.id)
+    street12 = create_street(name="Warner Street", areaId=area1.id)
+    street13 = create_street(name="College Road", areaId=area1.id)
     db.session.add_all([street11, street12, street13])
     db.session.commit()
 
-    area2 = Area(name='Tunapuna')
+    area2 = create_area(name='Tunapuna')
     db.session.add(area2)
     db.session.commit()
-
-    street21 = Street(name="Fairly Street", areaId=area2.id)
-    street22 = Street(name="Saint John Road", areaId=area2.id)
+     
+    street21 = create_street(name="Fairly Street", areaId=area2.id)
+    street22 = create_street(name="Saint John Road", areaId=area2.id)
     db.session.add_all([street21, street22])
     db.session.commit()
 
-    area3 = Area(name='San Juan')
+    area3 = create_area(name='San Juan')
     db.session.add(area3)
     db.session.commit()
 
     #Creating Drivers
-    driver1 = Driver(username="bob",
+    driver1 = create_driver(username="bob",
                      password="bobpass",
                      status="Offline",
                      areaId=area1.id,
                      streetId=street11.id)
-    driver2 = Driver(username="mary",
+    driver2 = create_driver(username="mary",
                      password="marypass",
                      status="Available",
                      areaId=area2.id,
@@ -50,17 +56,17 @@ def initialize():
     db.session.commit()
 
     #Creating Residents and Stops
-    resident1 = Resident(username="alice",
+    resident1 = resident_create(username="alice",
                          password="alicepass",
                          areaId=area1.id,
                          streetId=street12.id,
                          houseNumber=48)
-    resident2 = Resident(username="jane",
+    resident2 = resident_create(username="jane",
                          password="janepass",
                          areaId=area1.id,
                          streetId=street12.id,
                          houseNumber=50)
-    resident3 = Resident(username="john",
+    resident3 = resident_create(username="john",
                          password="johnpass",
                          areaId=area2.id,
                          streetId=street21.id,

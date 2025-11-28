@@ -1,5 +1,4 @@
 from .user import User
-from .admin import Admin
 from .driver import Driver
 from .resident import Resident
 
