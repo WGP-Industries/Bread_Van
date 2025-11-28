@@ -7,6 +7,5 @@ __all__ = [
     "auth",
     "driver",
     "resident",
-    "admin",
     "common",
 ]
