@@ -19,7 +19,6 @@ class Resident(User):
     subscribed_drives = db.Column(MutableList.as_mutable(JSON), default=[])
 
     area = db.relationship("Area", backref='residents')
-    street = db.relationship("Street", backref='residents')
     stops = db.relationship('Stop', backref='resident')
 
     __mapper_args__ = {
