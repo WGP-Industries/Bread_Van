@@ -71,7 +71,7 @@ class Driver(User):
         menu_text = f"Menu: {menu}" if menu else "No menu specified"
         eta_text = f"ETA: {eta}" if eta else f"at {time_str}"
         
-        # Note: You'll need to implement notification_service or remove this part
+        # Note: The notification service code is commented out for now
         # notification_service.notify(
         #     str(streetId),
         #     f"Bread van scheduled for {date_str} {eta_text}. {menu_text}",
