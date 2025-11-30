@@ -5,20 +5,12 @@ from datetime import datetime, timedelta
 from flask_migrate import Migrate, upgrade
 
 from App.database import db, get_migrate
-from App.models import User, Admin, Driver, Resident, Drive, Stop, Area, Street, DriverStock, Observer, SubjectMixin
+from App.database import db
+from App.models import User, Driver, Resident, Drive, Stop, Area, Street
 from App.main import create_app
 from App.controllers import (get_user, get_all_users_json, get_all_users,
                              get_user_by_username, initialize)
-from App.controllers.admin import (
-    admin_create_driver,
-    admin_delete_driver,
-    admin_add_area,
-    admin_add_street,
-    admin_delete_area,
-    admin_delete_street,
-    admin_view_all_areas,
-    admin_view_all_streets
-)
+
 from App.controllers.driver import (
     driver_schedule_drive,
     driver_cancel_drive,
@@ -26,26 +18,38 @@ from App.controllers.driver import (
     driver_start_drive,
     driver_end_drive,
     driver_view_requested_stops,
-    driver_update_drive_menu,
-    driver_update_drive_eta
+    driver_update_stock,
+    driver_view_stock,
+    create_driver,
+    delete_driver
+
 )
 from App.controllers.resident import (
     resident_create,
     resident_request_stop,
     resident_cancel_stop,
     resident_view_inbox,
-    resident_view_driver_stats,
-    resident_subscribe_to_drive,
-    resident_unsubscribe_from_drive,
-    resident_get_subscribed_drives,
-    resident_get_notifications,
-    resident_get_notification_stats,
-    resident_mark_notification_read,
-    resident_mark_all_notifications_read,
-    resident_clear_notifications,
-    resident_update_notification_preferences,
-    resident_request_stop_from_notification
+    resident_view_driver_stats
 )
+
+from App.controllers.area import (
+
+    create_area,
+    get_all_areas,
+    get_area_by_id,
+    get_streets_in_area,
+    delete_area
+)
+
+
+from App.controllers.street import (
+    create_street,
+    get_street_by_id,
+    get_all_streets,
+    delete_street,
+    get_streets_by_name
+)
+
 
 from App.controllers.user import (
     user_login,
@@ -53,18 +57,15 @@ from App.controllers.user import (
     user_view_street_drives
 )
 
+
+
+
 # This commands file allow you to create convenient CLI commands for testing controllers
 
 app = create_app()
 migrate = get_migrate(app)
 
-with app.app_context():
-    upgrade()
-    existing = db.session.query(User).filter_by(username='admin').first()
-    if not existing:
-        new_admin = Admin(username='admin', password='adminpass')
-        db.session.add(new_admin)
-        db.session.commit()
+
 
 
 # Initialisation
@@ -72,7 +73,7 @@ with app.app_context():
 def init():
     initialize()
     print('Welcome to the Bread Van App!')
-    print("For documentation, visit: https://github.com/LiannMaicoo/Bread_Van_CLI_App")
+    print("For documentation, visit: https://github.com/WGP-Industries/Bread_Van")
 
 
 # User Commands
@@ -112,7 +113,7 @@ def view_street_drives_command():
         print("Must be logged in to perform this action.")
         return
 
-    areas = Area.query.all()
+    areas =  get_all_areas()
     if not areas:
         print("No areas available. Please create an area first.")
         return
@@ -127,7 +128,7 @@ def view_street_drives_command():
         return
     chosen_area = areas[chosen_area_index - 1]
 
-    streets = Street.query.filter_by(areaId=chosen_area.id).all()
+    streets = get_streets_in_area(chosen_area.id)
     if not streets:
         print(
             "No streets available in the selected area. Please create a street first."
@@ -166,146 +167,84 @@ def view_street_drives_command():
     print("\n")
 
 
-app.cli.add_command(user_cli)
-
-# Admin Commands
-##################################################################################
-admin_cli = AppGroup('admin',
-                     help='Admin commands for managing areas and streets')
-@admin_cli.command("list", help="Lists users in the database")
+@user_cli.command("list", help="Lists users in the database")
 @click.argument("format", default="string")
 def list_user_command(format):
-    admin = require_admin()
-    if not admin:
-        return
 
-    users = get_all_users()
-    if users is None:
-        print("No users found.")
-        return
+        
+        users = get_all_users()
+        if users is None:
+            print("No users found.")
+            return
 
-    print("\nUsers in the database:")
-    print("-" * 70)
-    print(f"{'ID':<10} {'Username':<20} {'Type':<20}")
-    print("-" * 70)
-    for user in users:
-        print(f"{user.id:<10} {user.username:<20} {user.type:<20}")
-    print("\n")
+        print("\nUsers in the database:")
+        print("-" * 70)
+        print(f"{'ID':<10} {'Username':<20} {'Type':<20}")
+        print("-" * 70)
+        for user in users:
+            print(f"{user.id:<10} {user.username:<20} {user.type:<20}")
+        print("\n")
 
 
-@admin_cli.command("create_driver", help="Creates a driver")
+@user_cli.command("view_all_areas", help="View all areas")
+def view_all_areas_command():
+
+        areas = get_all_areas()
+        if not areas:
+            print("No areas available.")
+            return
+        print("\nAll Areas:")
+        for area in areas:
+            print(f"{area.id}. {area.name}")
+        print("\n")
+
+
+@user_cli.command("view_all_streets", help="View all streets")
+def view_all_streets_command():
+
+        streets = get_all_streets()
+        if not streets:
+            print("No streets available.")
+            return
+        print("\nAll Streets:")
+        for street in streets:
+            print(f"{street.id}. {street.name} (Area ID: {street.areaId})")
+        print("\n")
+
+
+
+
+
+app.cli.add_command(user_cli)    
+
+
+
+
+
+
+
+
+
+
+
+
+# Driver Commands
+##################################################################################
+driver_cli = AppGroup('driver', help='Driver object commands')
+
+@driver_cli.command("create_driver", help="Creates a driver")
 @click.argument("username")
 @click.argument("password")
 def create_driver_command(username, password):
-    admin = require_admin()
-    if not admin:
-        return
     try:
-        driver = admin_create_driver(username, password)
+        driver = create_driver(username, password)
         print(f"Driver {driver.username} created!")
     except ValueError as e:
         print(str(e))
 
 
-@admin_cli.command("delete_driver", help="Deletes a driver")
-@click.argument("driver_id", type=int)
-def delete_driver_command(driver_id):
-    admin = require_admin()
-    if not admin:
-        return
-    try:
-        driver = admin_delete_driver(driver_id)
-        print(f"Driver {driver.username} deleted.")
-    except ValueError as e:
-        print(str(e))
+        
 
-
-@admin_cli.command("add_area", help="Add a new area")
-@click.argument("name")
-def add_area_command(name):
-    admin = require_admin()
-    if not admin:
-        return
-    area = admin_add_area(name)
-    print(f"Area '{area.name}' added.")
-
-
-@admin_cli.command("add_street", help="Add a new street to an area")
-@click.argument("area_id", type=int)
-@click.argument("name")
-def add_street_command(area_id, name):
-    admin = require_admin()
-    if not admin:
-        return
-    try:
-        street = admin_add_street(area_id, name)
-        area = Area.query.get(area_id)
-        print(f"Street '{street.name}' added to area '{area.name}'.")
-    except ValueError as e:
-        print(str(e))
-
-
-@admin_cli.command("delete_area", help="Delete an area")
-@click.argument("area_id", type=int)
-def delete_area_command(area_id):
-    admin = require_admin()
-    if not admin:
-        return
-    try:
-        area = admin_delete_area(area_id)
-        print(f"Area '{area.name}' deleted.")
-    except ValueError as e:
-        print(str(e))
-
-
-@admin_cli.command("delete_street", help="Delete a street")
-@click.argument("street_id", type=int)
-def delete_street_command(street_id):
-    admin = require_admin()
-    if not admin:
-        return
-    try:
-        street = admin_delete_street(street_id)
-        print(f"Street '{street.name}' deleted.")
-    except ValueError as e:
-        print(str(e))
-
-
-@admin_cli.command("view_all_areas", help="View all areas")
-def view_all_areas_command():
-    admin = require_admin()
-    if not admin:
-        return
-    areas = admin_view_all_areas()
-    if not areas:
-        print("No areas available.")
-        return
-    print("\nAll Areas:")
-    for area in areas:
-        print(f"{area.id}. {area.name}")
-    print("\n")
-
-
-@admin_cli.command("view_all_streets", help="View all streets")
-def view_all_streets_command():
-    admin = require_admin()
-    if not admin:
-        return
-    streets = admin_view_all_streets()
-    if not streets:
-        print("No streets available.")
-        return
-    print("\nAll Streets:")
-    for street in streets:
-        print(f"{street.id}. {street.name} (Area ID: {street.areaId})")
-    print("\n")
-
-
-app.cli.add_command(admin_cli)
-
-# Driver Commands
-##################################################################################
-driver_cli = AppGroup('driver', help='Driver object commands')
 
 
 @driver_cli.command("schedule_drive", help="Schedule a drive")
@@ -316,7 +255,7 @@ def schedule_drive_command(date_str, time_str):
     if not driver:
         return
     # Area/street selection logic remains in CLI for user prompts
-    areas = Area.query.all()
+    areas = get_all_areas()
     if not areas:
         print("No areas available. Please create an area first.")
         return
@@ -328,7 +267,7 @@ def schedule_drive_command(date_str, time_str):
         print("Invalid area choice.")
         return
     chosen_area = areas[chosen_area_index - 1]
-    streets = Street.query.filter_by(areaId=chosen_area.id).all()
+    streets = get_streets_in_area(chosen_area.id)
     if not streets:
         print("No streets available in the selected area. Please create a street first.")
         return
@@ -340,49 +279,11 @@ def schedule_drive_command(date_str, time_str):
         print("Invalid street choice.")
         return
     chosen_street = streets[chosen_index - 1]
-    
-    # Get optional menu and ETA
-    menu = click.prompt("Enter menu items (optional - press Enter to skip)", default="", show_default=False)
-    eta_str = click.prompt("Enter ETA (optional - format HH:MM, press Enter to skip)", default="", show_default=False)
-    
-    menu = menu if menu else None
-    eta_str = eta_str if eta_str else None
-    
     try:
-        new_drive = driver_schedule_drive(driver, chosen_area.id, chosen_street.id, date_str, time_str, menu, eta_str)
+        new_drive = driver_schedule_drive(driver, chosen_area.id, chosen_street.id, date_str, time_str)
         print(f"\nDrive scheduled for {date_str} at {time_str} on {chosen_street.name}, {chosen_area.name}")
-        if menu:
-            print(f"Menu: {menu}")
-        if eta_str:
-            print(f"ETA: {eta_str}")
-    except ValueError as e:
-        print(str(e))
 
-@driver_cli.command("update_drive_menu", help="Update menu for a drive")
-@click.argument("drive_id", type=int)
-@click.argument("menu")
-def update_drive_menu_command(drive_id, menu):
-    driver = require_driver()
-    if not driver:
-        return
-    try:
-        updated_drive = driver_update_drive_menu(driver, drive_id, menu)
-        print(f"Menu updated for drive {drive_id}")
-        print(f"New menu: {menu}")
-    except ValueError as e:
-        print(str(e))
 
-@driver_cli.command("update_drive_eta", help="Update ETA for a drive")
-@click.argument("drive_id", type=int)
-@click.argument("eta_str")
-def update_drive_eta_command(drive_id, eta_str):
-    driver = require_driver()
-    if not driver:
-        return
-    try:
-        updated_drive = driver_update_drive_eta(driver, drive_id, eta_str)
-        print(f"ETA updated for drive {drive_id}")
-        print(f"New ETA: {eta_str}")
     except ValueError as e:
         print(str(e))
 
@@ -405,14 +306,13 @@ def view_drives_command():
         print("No scheduled drives.")
         return
     print("\nYour Scheduled Drives:")
-    print("-" * 100)
-    print(f"{'Drive ID':<10} {'Date':<12} {'Time':<8} {'Area':<20} {'Street':<20} {'Menu':<30}")
-    print("-" * 100)
+    print("-" * 70)
+    print(f"{'Drive ID':<10} {'Date':<12} {'Time':<8} {'Area':<20} {'Street':<20}")
+    print("-" * 70)
     for drive in drives:
         date_str = drive.date.strftime("%Y-%m-%d")
         time_str = drive.time.strftime("%H:%M")
-        menu_preview = drive.menu[:27] + "..." if drive.menu and len(drive.menu) > 30 else drive.menu
-        print(f"{drive.id:<10} {date_str:<12} {time_str:<8} {drive.area.name:<20} {drive.street.name:<20} {menu_preview or 'No menu':<30}")
+        print(f"{drive.id:<10} {date_str:<12} {time_str:<8} {drive.area.name:<20} {drive.street.name:<20}")
     print("\n")
 
 @driver_cli.command("start_drive", help="Start a drive")
@@ -451,6 +351,16 @@ def view_requested_stops_command(driveId):
     print(f"\nRequested Stops from {stops[0].drive.street.name}, {stops[0].drive.area.name}:")
     for stop in stops:
         print(f"#{stop.resident.houseNumber} \tResident: {stop.resident.username}")
+
+@driver_cli.command("delete_driver", help="Deletes a driver")
+@click.argument("driver_id", type=int)
+def delete_driver_command(driver_id):
+
+    try:
+        driver = delete_driver(driver_id)
+        print(f"Driver {driver.username} deleted.")
+    except ValueError as e:
+        print(str(e))
 
 
 app.cli.add_command(driver_cli)
@@ -492,6 +402,67 @@ def create_resident_command(username, password):
     resident = resident_create(username, password, chosen_area.id, chosen_street.id, house_number)
     print(f"Resident {username} created at #{house_number} {chosen_street.name}, {chosen_area.name}")
 
+
+@resident_cli.command("add_area", help="Add a new area")
+@click.argument("name")
+def add_area_command(name):
+    resident = require_resident()
+    if not resident:
+        return
+
+    area = create_area(name)
+    print(f"Area '{area.name}' added.")
+
+
+
+
+@resident_cli.command("add_street", help="Add a new street to an area")
+@click.argument("area_id", type=int)
+@click.argument("name")
+def add_street_command(area_id, name):
+
+    resident = require_resident()
+    if not resident:
+        return
+  
+    try:
+        street = create_street(area_id, name)
+        area = Area.query.get(area_id)
+        print(f"Street '{street.name}' added to area '{area.name}'.")
+    except ValueError as e:
+        print(str(e))
+
+
+@resident_cli.command("delete_area", help="Delete an area")
+@click.argument("area_id", type=int)
+def delete_area_command(area_id):
+    resident_cli = require_resident()
+    if not resident_cli:
+        return  
+    
+
+    try:
+        area = delete_area(area_id)
+        print(f"Area '{area.name}' deleted.")
+    except ValueError as e:
+        print(str(e))
+
+
+@resident_cli.command("delete_street", help="Delete a street")
+@click.argument("street_id", type=int)
+def delete_street_command(street_id):
+    resident_cli = require_resident()
+    if not resident_cli:
+        return
+    try:
+        street = delete_street(street_id)
+        print(f"Street '{street.name}' deleted.")
+    except ValueError as e:
+        print(str(e))
+
+
+
+
 @resident_cli.command("request_stop", help="Requests a Stop from a drive on the resident's street")
 def request_stop_command():
     resident = require_resident()
@@ -517,18 +488,6 @@ def request_stop_command():
     except ValueError as e:
         print(str(e))
 
-@resident_cli.command("request_stop_by_id", help="Request a stop for a specific drive ID")
-@click.argument("drive_id", type=int)
-def request_stop_by_id_command(drive_id):
-    resident = require_resident()
-    if not resident:
-        return
-    try:
-        stop = resident_request_stop_from_notification(resident, drive_id)
-        print(f"Stop requested for drive {drive_id}.")
-    except ValueError as e:
-        print(str(e))
-
 @resident_cli.command("cancel_stop", help="Cancel a previously requested Stop from a drive")
 @click.argument("drive_id")
 def cancel_stop_command(drive_id):
@@ -542,107 +501,17 @@ def cancel_stop_command(drive_id):
         print(str(e))
 
 @resident_cli.command("view_inbox", help="View notifications in the resident's inbox")
-@click.option("--unread-only", is_flag=True, help="Show only unread notifications")
-def view_inbox_command(unread_only):
+def view_inbox_command():
     resident = require_resident()
     if not resident:
         return
-    notifications = resident_get_notifications(resident, unread_only=unread_only)
-    if not notifications:
-        print("Your inbox is empty." if not unread_only else "No unread notifications.")
-        return
-    
-    title = "UNREAD NOTIFICATIONS" if unread_only else "ALL NOTIFICATIONS"
-    print(f"\n{title}:")
-    print("=" * 80)
-    print(f"{'#':<3} {'Status':<6} {'Time':<19} {'Type':<15} {'Message'}")
-    print("=" * 80)
-    
-    for i, notif in enumerate(notifications, 1):
-        status = "Unread" if not notif.get('read', False) else "Read"
-        notif_type = notif.get('type', 'info')
-        timestamp = notif.get('timestamp', 'Unknown')
-        message = notif.get('message', 'No message')
-        
-        print(f"{i:<3} {status:<6} {timestamp:<19} {notif_type:<15} {message}")
-    
-    stats = resident_get_notification_stats(resident)
-    print(f"\nStatistics: {stats['total_notifications']} total, {stats['unread_notifications']} unread")
-
-@resident_cli.command("notification_stats", help="View notification statistics")
-def notification_stats_command():
-    resident = require_resident()
-    if not resident:
-        return
-    stats = resident_get_notification_stats(resident)
-    print(f"\nNotification Statistics for {resident.username}:")
-    print(f"   Total notifications: {stats['total_notifications']}")
-    print(f"   Unread notifications: {stats['unread_notifications']}")
-    print(f"   Notification preferences: {', '.join(stats['notification_preferences'])}")
-
-@resident_cli.command("mark_notification_read", help="Mark a specific notification as read")
-@click.argument("notification_index", type=int)
-def mark_notification_read_command(notification_index):
-    resident = require_resident()
-    if not resident:
-        return
-    try:
-        resident_mark_notification_read(resident, notification_index - 1)  
-        print(f"Notification #{notification_index} marked as read.")
-    except ValueError as e:
-        print(str(e))
-
-@resident_cli.command("mark_all_read", help="Mark all notifications as read")
-def mark_all_read_command():
-    resident = require_resident()
-    if not resident:
-        return
-    resident_mark_all_notifications_read(resident)
-    print("All notifications marked as read.")
-
-@resident_cli.command("clear_inbox", help="Clear all notifications")
-def clear_inbox_command():
-    resident = require_resident()
-    if not resident:
-        return
-    resident_clear_notifications(resident)
-    print("Inbox cleared.")
-
-@resident_cli.command("update_preferences", help="Update notification preferences")
-def update_preferences_command():
-    resident = require_resident()
-    if not resident:
-        return
-    
-    current_prefs = resident.notification_preferences
-    available_prefs = ["drive_scheduled", "menu_updated", "eta_updated", "stop_confirmed"]
-    
-    print(f"\nCurrent preferences: {current_prefs}")
-    print("\nAvailable notification types:")
-    for i, pref in enumerate(available_prefs, 1):
-        print(f"  {i}. {pref}")
-    
-    print("\nEnter the numbers of preferences you want (comma-separated):")
-    print("Example: 1,2,4 for drive_scheduled, menu_updated, stop_confirmed")
-    
-    try:
-        choices = click.prompt("Your choices", type=str)
-        chosen_indices = [int(x.strip()) for x in choices.split(',')]
-        
-        new_prefs = []
-        for idx in chosen_indices:
-            if 1 <= idx <= len(available_prefs):
-                new_prefs.append(available_prefs[idx-1])
-        
-        if not new_prefs:
-            print("No valid preferences selected.")
-            return
-            
-        resident_update_notification_preferences(resident, new_prefs)
-        print(f"Preferences updated to: {new_prefs}")
-        
-    except ValueError:
-        print("Invalid input. Please enter numbers separated by commas.")
+    inbox = resident_view_inbox(resident)
+    if inbox:
+        print("Inbox Notifications:")
+        for notif in inbox:
+            print(notif)
+    else:
+        print("Your inbox is empty.")
 
 @resident_cli.command("view_driver_stats", help="View the status and location of a driver")
 @click.argument("driver_id")
@@ -664,71 +533,11 @@ def view_driver_stats_command(driver_id):
     except ValueError as e:
         print(str(e))
 
-# Resident Subscription Commands for Observer Pattern
-
-@resident_cli.command("subscribe_drive", help="Subscribe to notifications for a drive")
-@click.argument("drive_id", type=int)
-def subscribe_drive_command(drive_id):
-    resident = require_resident()
-    if not resident:
-        return
-    try:
-        resident_subscribe_to_drive(resident, drive_id)
-        print(f"Subscribed to notifications for drive {drive_id}")
-    except ValueError as e:
-        print(str(e))
-
-@resident_cli.command("unsubscribe_drive", help="Unsubscribe from notifications for a drive")
-@click.argument("drive_id", type=int)
-def unsubscribe_drive_command(drive_id):
-    resident = require_resident()
-    if not resident:
-        return
-    try:
-        resident_unsubscribe_from_drive(resident, drive_id)
-        print(f"Unsubscribed from notifications for drive {drive_id}")
-    except ValueError as e:
-        print(str(e))
-
-@resident_cli.command("view_subscribed_drives", help="View drives you're subscribed to")
-def view_subscribed_drives_command():
-    resident = require_resident()
-    if not resident:
-        return
-    drives = resident_get_subscribed_drives(resident)
-    if not drives:
-        print("You are not subscribed to any drives.")
-        return
-    
-    print("\nYour Subscribed Drives:")
-    print("-" * 100)
-    print(f"{'Drive ID':<10} {'Date':<12} {'Time':<8} {'Area':<20} {'Street':<20} {'Menu':<30}")
-    print("-" * 100)
-    for drive in drives:
-        date_str = drive.date.strftime("%Y-%m-%d")
-        time_str = drive.time.strftime("%H:%M")
-        menu_preview = drive.menu[:27] + "..." if drive.menu and len(drive.menu) > 30 else drive.menu
-        eta_str = drive.eta.strftime("%H:%M") if drive.eta else "Not set"
-        print(f"{drive.id:<10} {date_str:<12} {time_str:<8} {drive.area.name:<20} {drive.street.name:<20} {menu_preview or 'No menu':<30}")
-    print("\n")
-
 
 app.cli.add_command(resident_cli)
 
 
-# Helper Commands
-##################################################################################
-def require_admin():
-    user = User.query.filter_by(logged_in=True).first()
-    if not user:
-        print("Must be logged in first.")
-        return None
 
-    if isinstance(user, Admin):
-        return user
-
-    print("Must be logged in as a admin to perform this action.")
-    return None
 
 
 def require_driver():

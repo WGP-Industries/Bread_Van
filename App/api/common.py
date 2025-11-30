@@ -9,7 +9,7 @@ bp = Blueprint("api_common", __name__, url_prefix="")
 
 @bp.get("/areas")
 def get_areas():
-    areas = area_controller.admin_view_all_areas() if hasattr(area_controller, "admin_view_all_areas") else []
+    areas = area_controller.get_all_areas() if hasattr(area_controller, "get_all_areas()") else []
     items = [a.get_json() if hasattr(a, "get_json") else a for a in areas]
     return jsonify({"items": items}), 200
 
@@ -20,8 +20,8 @@ def get_streets():
     streets = []
     if area_id and hasattr(street_controller, "get_streets_for_area"):
         streets = street_controller.get_streets_for_area(area_id)
-    elif hasattr(street_controller, "admin_view_all_streets"):
-        streets = street_controller.admin_view_all_streets()
+    elif hasattr(street_controller, "get_all_streets()"):
+        streets = street_controller.get_all_streets()
     items = [s.get_json() if hasattr(s, "get_json") else s for s in (streets or [])]
     return jsonify({"items": items}), 200
 
