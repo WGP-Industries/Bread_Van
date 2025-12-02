@@ -32,16 +32,16 @@ def login_action():
 
     if not token:
         flash('Bad username or password given')
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return redirect(url_for('auth_views.login_page'))
 
     flash('Login Successful')
-    response = jsonify({'message': 'Login successful'})
+    response = redirect(url_for('index_views.index_page'))
     set_access_cookies(response, token)
     return response
 
 @auth_views.route('/logout', methods=['GET'])
 def logout_action():
-    response = jsonify({'message': 'Logged out'})
+    response = redirect(url_for('index_views.index_page'))
     flash("Logged Out!")
     unset_jwt_cookies(response)
     return response
