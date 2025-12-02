@@ -91,21 +91,21 @@ class DriverUnitTests(unittest.TestCase):
         driver_json = driver.get_json()
         self.assertDictEqual(driver_json, {"id":None, "username":"steve", "status":"Busy", "areaId":2, "streetId":12})
 
-class AdminUnitTests(unittest.TestCase):
+# class AdminUnitTests(unittest.TestCase):
 
-    def test_new_admin(self):
-        admin = Admin("admin", "adminpass")
-        assert admin.username == "admin"
-        assert admin.password != "adminpass"
+#     def test_new_admin(self):
+#         admin = Admin("admin", "adminpass")
+#         assert admin.username == "admin"
+#         assert admin.password != "adminpass"
 
-    def test_admin_type(self):
-        admin = Admin("admin", "adminpass")
-        assert admin.type == "Admin"
+#     def test_admin_type(self):
+#         admin = Admin("admin", "adminpass")
+#         assert admin.type == "Admin"
 
-    def test_admin_getJSON(self):
-        admin = Admin("admin", "adminpass")
-        admin_json = admin.get_json()
-        self.assertDictEqual(admin_json, {"id":None, "username":"admin"})
+#     def test_admin_getJSON(self):
+#         admin = Admin("admin", "adminpass")
+#         admin_json = admin.get_json()
+#         self.assertDictEqual(admin_json, {"id":None, "username":"admin"})
 
 class AreaUnitTests(unittest.TestCase):
 

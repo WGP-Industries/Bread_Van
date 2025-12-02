@@ -1,13 +1,22 @@
 {% extends "layout.html" %}
-{% block title %}Flask MVC App{% endblock %}
-{% block page %}Flask MVC App{% endblock %}
-
-{{ super() }}
+{% block title %}Bread Van{% endblock %}
+{% block page %}Bread Van{% endblock %}
 
 {% block content %}
-    <h1>Flask MVC</h1>
+
+<div class="section center">
+    <h2>Fresh Bread Delivered Daily 🍞</h2>
+
     {% if is_authenticated %}
-        <p> Welcome {{current_user.username}} </p>
+        <p>Welcome back, {{ current_user.username }}!</p>
     {% endif %}
-    <p>This is a boileplate flask application which follows the MVC pattern for structuring the project.</p>
+
+    <p>Your neighborhood bread van is on the move. Track it, place orders, and browse today’s menu.</p>
+
+    <div style="margin-top: 2rem;">
+        <a class="btn" href="/menu">View Menu</a>
+        <a class="btn brown lighten-1" href="/map">Track Van</a>
+    </div>
+</div>
+
 {% endblock %}

@@ -1,0 +1,35 @@
+{% extends "layout.html" %}
+{% block title %}Track Van{% endblock %}
+{% block page %}Track Van{% endblock %}
+
+{% block content %}
+
+<h4 class="center">Live Bread Van Location</h4>
+
+<div id="map" style="height: 450px; border-radius: 10px;"></div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    let map = L.map('map').setView([{{ lat }}, {{ lng }}], 15);
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
+
+    let marker = L.marker([{{ lat }}, {{ lng }}]).addTo(map)
+        .bindPopup("Bread Van")
+        .openPopup();
+
+    setInterval(() => {
+        fetch("/van_location")
+            .then(r => r.json())
+            .then(data => {
+                marker.setLatLng([data.lat, data.lng]);
+                map.setView([data.lat, data.lng]);
+            });
+    }, 5000);
+</script>
+
+{% endblock %}

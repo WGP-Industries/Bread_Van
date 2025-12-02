@@ -1,0 +1,31 @@
+{% extends "layout.html" %}
+{% block title %}Menu{% endblock %}
+{% block page %}Menu{% endblock %}
+
+{% block content %}
+
+<h3 class="center">Today’s Fresh Baked Goods</h3>
+
+<div class="row">
+
+    {% for item in items %}
+    <div class="col s12 m6 l4">
+        <div class="card">
+            <div class="card-image">
+                <img src="{{ item.image }}">
+            </div>
+            <div class="card-content">
+                <span class="card-title">{{ item.name }}</span>
+                <p>{{ item.description }}</p>
+                <strong>${{ item.price }}</strong>
+            </div>
+            <div class="card-action">
+                <a href="/add_to_cart/{{ item.id }}" class="btn brown lighten-1">Add to Order</a>
+            </div>
+        </div>
+    </div>
+    {% endfor %}
+
+</div>
+
+{% endblock %}

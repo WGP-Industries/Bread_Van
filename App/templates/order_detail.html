@@ -1,0 +1,24 @@
+{% extends "layout.html" %}
+{% block title %}Order #{{ order.id }}{% endblock %}
+{% block page %}Order #{{ order.id }}{% endblock %}
+
+{% block content %}
+
+<h4>Order Summary</h4>
+
+<p><strong>Total:</strong> ${{ order.total }}</p>
+<p><strong>Date:</strong> {{ order.date }}</p>
+
+<h5>Items</h5>
+<ul class="collection">
+    {% for item in order.items %}
+    <li class="collection-item">
+        {{ item.name }} — ${{ item.price }} × {{ item.quantity }}
+        <span class="right">
+            ${{ item.price * item.quantity }}
+        </span>
+    </li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

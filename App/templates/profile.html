@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block title %}Profile{% endblock %}
+{% block page %}Profile{% endblock %}
+
+{% block content %}
+
+<h4>Your Profile</h4>
+
+<div class="card">
+    <div class="card-content">
+        <span class="card-title">{{ current_user.username }}</span>
+        <p>Email: {{ current_user.email }}</p>
+        <p>Member since: {{ current_user.created_at }}</p>
+    </div>
+</div>
+
+<h5>Saved Delivery Address</h5>
+<div class="card">
+    <div class="card-content">
+        {% if current_user.address %}
+            <p>{{ current_user.address }}</p>
+        {% else %}
+            <p>No address saved.</p>
+        {% endif %}
+    </div>
+    <div class="card-action">
+        <a href="/edit_address" class="btn brown lighten-1">Edit Address</a>
+    </div>
+</div>
+
+<h5>Recent Orders</h5>
+<ul class="collection">
+    {% for order in orders %}
+    <li class="collection-item">
+        <a href="/order/{{ order.id }}">
+            Order #{{ order.id }} — ${{ order.total }} — {{ order.date }}
+        </a>
+    </li>
+    {% else %}
+    <li class="collection-item">No orders yet.</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}

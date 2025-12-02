@@ -1,0 +1,20 @@
+{% extends "layout.html" %}
+{% block title %}Notifications{% endblock %}
+{% block page %}Notifications{% endblock %}
+
+{% block content %}
+
+<h4>Your Notifications</h4>
+
+<ul class="collection">
+    {% for n in notifications %}
+    <li class="collection-item">
+        <span>{{ n.message }}</span>
+        <small class="right">{{ n.timestamp }}</small>
+    </li>
+    {% else %}
+    <li class="collection-item">No notifications.</li>
+    {% endfor %}
+</ul>
+
+{% endblock %}
