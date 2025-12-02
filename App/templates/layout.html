@@ -53,15 +53,6 @@
         <!-- Right: Login / Logout / Notifications -->
         {% if is_authenticated %}
         <ul class="right">
-            <!-- Notification Icon -->
-            <li>
-                <a href="/notifications" class="notification-wrapper">
-                    <i class="material-icons">notifications</i>
-                    {% if unread_notifications > 0 %}
-                        <span class="notification-badge">{{ unread_notifications }}</span>
-                    {% endif %}
-                </a>
-            </li>
             <li><a href="/logout">Logout</a></li>
         </ul>
         {% else %}
