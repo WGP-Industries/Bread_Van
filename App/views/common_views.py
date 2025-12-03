@@ -12,15 +12,15 @@ common_views = Blueprint('common_views', __name__)
 
 
 @common_views.route('/menu', methods=['GET'])
+@jwt_required(optional=True)
 def get_menu():
     items = item_controller.get_all_items()
 
-    try:
-        uid= get_jwt_identity()
+    uid = get_jwt_identity()
+    role = None
+    if uid:
         user = user_controller.get_user(uid)
-        role = user.type if user else None
-    except:
-        role = None
+        role = user.type
 
     return render_template("menu.html", items=items, role=role)
 
