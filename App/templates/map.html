@@ -1,9 +1,7 @@
 {% extends "layout.html" %}
 {% block title %}Track Van{% endblock %}
-{% block page %}Track Van{% endblock %}
 
 {% block content %}
-
 <h4 class="center">Live Bread Van Location</h4>
 
 <div id="map" style="height: 450px; border-radius: 10px;"></div>
@@ -12,24 +10,45 @@
 <script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
 
 <script>
-    let map = L.map('map').setView([{{ lat }}, {{ lng }}], 15);
+    let map = L.map('map').setView([10.6918, -61.2225], 15); // default view
 
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
         maxZoom: 19
     }).addTo(map);
 
-    let marker = L.marker([{{ lat }}, {{ lng }}]).addTo(map)
-        .bindPopup("Bread Van")
-        .openPopup();
+    let vanMarker = L.marker([10.6918, -61.2225], {icon: L.icon({iconUrl:'/static/van_icon.png', iconSize:[32,32]})})
+        .addTo(map)
+        .bindPopup("Bread Van");
 
-    setInterval(() => {
+    let stopMarkers = [];
+
+    function updateMap() {
+        // Update van location
         fetch("/van_location")
             .then(r => r.json())
             .then(data => {
-                marker.setLatLng([data.lat, data.lng]);
-                map.setView([data.lat, data.lng]);
+                vanMarker.setLatLng([data.lat, data.lng]);
+                map.setView([data.lat, data.lng], 15);
             });
-    }, 5000);
-</script>
 
+        // Update resident stops
+        fetch("/resident/stops_for_map")
+            .then(r => r.json())
+            .then(data => {
+                // remove old markers
+                stopMarkers.forEach(m => map.removeLayer(m));
+                stopMarkers = [];
+
+                data.forEach(s => {
+                    let m = L.marker([s.lat, s.lng], {icon: L.icon({iconUrl:'/static/stop_icon.png', iconSize:[24,24]})})
+                        .addTo(map)
+                        .bindPopup(`Stop for Drive ${s.driveId}`);
+                    stopMarkers.push(m);
+                });
+            });
+    }
+
+    updateMap();
+    setInterval(updateMap, 5000);
+</script>
 {% endblock %}

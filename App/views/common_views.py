@@ -1,10 +1,32 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
+from flask_jwt_extended import jwt_required
 from App.controllers import area as area_controller
 from App.controllers import street as street_controller
 from App.controllers import drive as drive_controller
+from App.controllers import driver as driver_controller
 
 common_views = Blueprint('common_views', __name__)
 
+
+
+@common_views.route('/menu', methods=['GET'])
+def get_menu():
+    return render_template("menu.html")
+
+@common_views.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    return render_template("profile.html")
+
+@common_views.route('/notifications', methods=['GET'])
+@jwt_required()
+def get_notifications():
+    return render_template("notification.html")
+
+@common_views.route('/map', methods=['GET'])
+@jwt_required()
+def get_map():
+    return render_template("map.html", lat=10.6918, lng=-61.2225)
 
 @common_views.route('/areas', methods=['GET'])
 def get_areas():
@@ -33,3 +55,13 @@ def street_drives(street_id):
         drives = drive_controller.get_drives_for_street(street_id, date)
     items = [d.get_json() if hasattr(d, 'get_json') else d for d in (drives or [])]
     return jsonify({'items': items}), 200
+
+@common_views.route('/van_location', methods=['GET'])
+def van_location():
+    
+    loc = driver_controller.get_latest_driver_location()
+
+    if not loc:
+        return jsonify({"lat": 0, "lng": 0}), 200
+
+    return jsonify({"lat": loc.last_lat, "lng": loc.last_lng}), 200

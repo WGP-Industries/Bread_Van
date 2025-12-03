@@ -3,6 +3,7 @@ from flask_jwt_extended import jwt_required
 
 from App.views.auth import auth_views
 from App.controllers import driver as driver_controller
+from App.controllers import drive as drive_controller
 from App.controllers import user as user_controller
 from App.views import user as user_views
 from App.api.security import role_required, current_user_id
@@ -91,3 +92,26 @@ def requested_stops(drive_id):
     stops = driver_controller.driver_view_requested_stops(driver, drive_id)
     items = [s.get_json() if hasattr(s, 'get_json') else s for s in (stops or [])]
     return jsonify({'items': items}), 200
+
+@driver_views.route('/driver/location', methods=['POST'])
+@jwt_required()
+@role_required('Driver')
+def update_driver_location():
+    uid = current_user_id()
+    data = request.get_json()
+    lat = data.get("lat")
+    lng = data.get("lng")
+
+    driver_controller.update_driver_location(uid, lat, lng)
+    
+    return jsonify({"status": "ok"}), 200
+
+
+@driver_views.route('/driver/drives/<int:drive_id>/map', methods=['GET'])
+@jwt_required()
+@role_required("Driver")
+def drive_map(drive_id):
+    
+    stops = drive_controller.get_stops_for_drive(drive_id)
+    data = [s.get_json() for s in stops]
+    return jsonify(data), 200

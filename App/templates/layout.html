@@ -2,26 +2,16 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-
-    <!-- Theme -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
     <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
     <link rel="stylesheet"
           href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-
     <title>{% block title %}{% endblock %}</title>
 
     <style>
-        nav.bread-nav {
-            background: #d49a6a; /* warm bread color */
-        }
-        .brand-logo {
-            font-weight: 600;
-            letter-spacing: 1px;
-        }
-        .notification-wrapper {
-            position: relative;
-        }
+        nav.bread-nav { background: #d49a6a; }
+        .brand-logo { font-weight: 600; letter-spacing: 1px; }
+        .notification-wrapper { position: relative; }
         .notification-badge {
             position: absolute;
             top: -4px;
@@ -40,28 +30,32 @@
     <div class="nav-wrapper">
         <a href="/" class="brand-logo center">Bread Van</a>
 
-        <!-- Left Menu -->
         <ul class="left hide-on-med-and-down">
             <li><a href="/">Home</a></li>
             <li><a href="/menu">Menu</a></li>
             <li><a href="/map">Track Van</a></li>
-            {% if is_authenticated %}
+            {% if current_user %}
                 <li><a href="/profile">Profile</a></li>
             {% endif %}
         </ul>
 
-        <!-- Right: Login / Logout / Notifications -->
-        {% if is_authenticated %}
+        {% if current_user %}
         <ul class="right">
+            <li class="notification-wrapper">
+                <a href="/notifications">
+                    <i class="material-icons">notifications</i>
+                    {% if current_user.get_unread_count() > 0 %}
+                    <span class="notification-badge">{{ current_user.get_unread_count() }}</span>
+                    {% endif %}
+                </a>
+            </li>
             <li><a href="/logout">Logout</a></li>
         </ul>
         {% else %}
-        <form method="POST" action="/login"
-              class="right navbar-form"
-              style="display:flex; align-items:center; margin-right:10px;">
+        <form method="POST" action="/login" class="right navbar-form" style="display:flex; align-items:center; margin-right:10px;">
             <div class="input-field" style="margin-right:10px;">
                 <input name="username" type="text" required>
-                <label for="username">username</label>
+                <label for="username">Username</label>
             </div>
             <div class="input-field" style="margin-right:10px;">
                 <input name="password" type="password" required>
@@ -85,7 +79,7 @@
     {% with messages = get_flashed_messages() %}
         {% if messages %}
             {% for message in messages %}
-                M.toast({html: '{{message}}'})
+                M.toast({html: '{{message}}'});
             {% endfor %}
         {% endif %}
     {% endwith %}

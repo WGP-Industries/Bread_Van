@@ -9,6 +9,8 @@ class Driver(User):
     status = db.Column(db.String(20), nullable=False)
     areaId = db.Column(db.Integer, db.ForeignKey('area.id'), nullable=False)
     streetId = db.Column(db.Integer, db.ForeignKey('street.id'))
+    lat = db.Column(db.Float, nullable=True)
+    lng = db.Column(db.Float, nullable=True)
 
     area = db.relationship("Area", backref="drivers")
     street = db.relationship("Street", backref="drivers")
@@ -146,3 +148,6 @@ class Driver(User):
             db.session.commit()
             return drive
         return None
+    
+    def get_unread_count(self):
+        return 0

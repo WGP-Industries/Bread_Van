@@ -4,6 +4,7 @@ from flask_jwt_extended import jwt_required
 from App.api.security import role_required, current_user_id
 from App.controllers import resident as resident_controller
 from App.controllers import user as user_controller
+from App.controllers import stop as stops_controller
 
 resident_views = Blueprint('resident_views', __name__)
 
@@ -67,3 +68,14 @@ def driver_stats():
     except ValueError as e:
         return jsonify({'error': {'code': 'not_found', 'message': str(e)}}), 404
     return jsonify({'stats': stats}), 200
+
+@resident_views.route('/resident/stops_for_map', methods=['GET'])
+@jwt_required()
+@role_required('Resident')
+def stops_for_map():
+    uid = current_user_id()
+    resident = user_controller.get_user(uid)
+
+    stops = stops_controller.get_resident_stops_for_map(resident)
+
+    return jsonify([s.get_json() for s in stops]), 200
