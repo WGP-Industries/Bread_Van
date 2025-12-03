@@ -1,10 +1,11 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, redirect, render_template
 from flask_jwt_extended import jwt_required
 
 from App.views.auth import auth_views
 from App.controllers import driver as driver_controller
 from App.controllers import drive as drive_controller
 from App.controllers import user as user_controller
+from App.controllers import item as item_controller
 from App.views import user as user_views
 from App.api.security import role_required, current_user_id
 
@@ -18,6 +19,44 @@ def me():
     uid = current_user_id()
     return jsonify({'id': uid}), 200
 
+@driver_views.route('/add-item', methods=['GET', 'POST'])
+@jwt_required()
+@role_required('Driver')
+def add_item_page():
+    if request.method == 'POST':
+        name = request.form.get("name")
+        price = request.form.get("price")
+        description = request.form.get("description")
+        tags = request.form.get("tags")
+
+        item_controller.add_item(name,price,description,tags)
+        return redirect('/menu')
+    
+    return render_template('add_item.html')
+
+@driver_views.route('/item/<int:item_id>/edit', methods=['GET', 'POST'])
+@jwt_required()
+@role_required("Driver")
+def edit_item(item_id):
+    item = item_controller.get_item_by_id(item_id)
+
+    if request.method == 'POST':
+        name = request.form.get("name")
+        price = request.form.get("price")
+        description = request.form.get("description")
+        tags = request.form.get("tags")
+
+        item_controller.update_item(item_id, name, price, description, tags)
+        return redirect('/menu')
+
+    return render_template("edit_item.html", item=item)
+
+@driver_views.route('/item/<int:item_id>/delete', methods=['GET'])
+@jwt_required()
+@role_required("Driver")
+def delete_item(item_id):
+    item_controller.delete_item(item_id)
+    return redirect('/menu')
 
 @driver_views.route('/driver/drives', methods=['GET'])
 @jwt_required()

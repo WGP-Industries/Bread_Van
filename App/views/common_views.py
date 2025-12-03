@@ -1,10 +1,11 @@
 from flask import Blueprint, request, jsonify, render_template
-from flask_jwt_extended import jwt_required
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from App.controllers import area as area_controller
 from App.controllers import street as street_controller
 from App.controllers import drive as drive_controller
 from App.controllers import driver as driver_controller
 from App.controllers import item as item_controller
+from App.controllers import user as user_controller
 
 common_views = Blueprint('common_views', __name__)
 
@@ -13,7 +14,15 @@ common_views = Blueprint('common_views', __name__)
 @common_views.route('/menu', methods=['GET'])
 def get_menu():
     items = item_controller.get_all_items()
-    return render_template("menu.html", items=items)
+
+    try:
+        uid= get_jwt_identity()
+        user = user_controller.get_user(uid)
+        role = user.type if user else None
+    except:
+        role = None
+
+    return render_template("menu.html", items=items, role=role)
 
 @common_views.route('/profile', methods=['GET'])
 @jwt_required()

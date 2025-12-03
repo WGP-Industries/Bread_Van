@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+{% block title %}Edit Item{% endblock %}
+
+{% block content %}
+<h4>Edit {{ item.name }}</h4>
+
+<form method="POST">
+
+    <label>Name</label>
+    <input name="name" value="{{ item.name }}">
+
+    <label>Price</label>
+    <input name="price" value="{{ item.price }}">
+
+    <label>Description</label>
+    <textarea name="description">{{ item.description }}</textarea>
+
+    <label>Tags</label>
+    <input name="tags" value="{{ item.tags }}">
+
+    <button type="submit" class="btn blue">Save Changes</button>
+    <a href="/menu" class="btn grey">Cancel</a>
+
+</form>
+{% endblock %}

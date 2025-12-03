@@ -6,6 +6,12 @@
 
 <h3 class="center">Today’s Fresh Baked Goods</h3>
 
+{% if role == "Driver" %}
+<div class = "row center">
+    <a href="/add-item" class = "btn green"> Add New Item</a>
+</div>
+{% end if %}
+
 <div class="row">
 
     {% for item in items %}
@@ -19,6 +25,13 @@
                 <p>{{ item.description }}</p>
                 <strong>${{ item.price }}</strong>
             </div>
+
+            {% if role == "Driver" %}
+            <div class = "card-action">
+                <a href="/item/{{item.id}}/edit" class="btn-small blue">Edit</a>
+                <a href="/item/{{item.id}}/delete" class="btn-small red">Delete</a>
+            </div>
+
         </div>
     </div>
     {% endfor %}
