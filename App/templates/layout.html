@@ -9,6 +9,15 @@
     <title>{% block title %}{% endblock %}</title>
 
     <style>
+        body {
+            background: url('{{ url_for("static", filename="bread.jpg") }}') no-repeat center center fixed;
+            background-size: cover;
+        }
+        .container {
+            background-color: rgba(255, 255, 255, 0.85);
+            padding: 2rem;
+            border-radius: 8px;
+        }
         nav.bread-nav { background: #d49a6a; }
         .brand-logo { font-weight: 600; letter-spacing: 1px; }
         .notification-wrapper { position: relative; }
@@ -70,6 +79,11 @@
 <div class="container" style="margin-top:2rem;">
     {% block content %}{% endblock %}
 </div>
+
+<!--Addition--->
+<footer class="page-footer" style="background:#d49a6a; padding:1rem; text-align:center;">
+    &copy; 2025 Bread Van
+</footer>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
 
