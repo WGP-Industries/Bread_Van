@@ -1,3 +1,48 @@
-html {
+/*html {
     padding: 0;
+}*/
+
+body {
+    background-image: url("/static/images/bread_bg.jpg");
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    margin: 0;
+    font-family: sans-serif;
+}
+
+/* Transparent content box */
+.container {
+    background:rgba(255, 255, 255, 0.85);
+    padding: 20px;
+    border-radius: 12px;
+    max-width: 900px;
+    margin: 40px auto;
+    box-shadow: 0px 4px 12px
+    rgba(0, 0, 0, 0.2);
+}
+
+/* Buttons */
+.btn{
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 10px;
+}
+
+/*Set address button*/
+.btn-set{
+    background-color: #ffd36b; /*yellow for now*/
+}
+
+/*Stop button*/
+.btn-stop{
+    background-color: #ff6666; /*red for now*/
+    color: white;
+}
+
+.btn:hover{
+    opacity: 0.8;
 }

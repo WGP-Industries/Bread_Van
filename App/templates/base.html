@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Bread Van</title>
+        <link rel="stylesheet"
+        href="{{ url_for('static', filename='css/style.css')}}">
+    </head>
+    <body>
+
+        <div class="content-box">
+            {% block content %}{% endblock %}
+        </div>
+
+    </body>
+</html>
