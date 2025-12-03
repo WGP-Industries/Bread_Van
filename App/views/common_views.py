@@ -4,7 +4,7 @@ from App.controllers import area as area_controller
 from App.controllers import street as street_controller
 from App.controllers import drive as drive_controller
 from App.controllers import driver as driver_controller
-from App.models import Item
+from App.controllers import item as item_controller
 
 common_views = Blueprint('common_views', __name__)
 
@@ -12,7 +12,7 @@ common_views = Blueprint('common_views', __name__)
 
 @common_views.route('/menu', methods=['GET'])
 def get_menu():
-    items = Item.query.all()
+    items = item_controller.get_all_items()
     return render_template("menu.html", items=items)
 
 @common_views.route('/profile', methods=['GET'])
