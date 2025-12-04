@@ -1,0 +1,284 @@
+{% extends "layout.html" %}
+{% block title %}Browse Drives{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <h4>Browse Drives in Your Area</h4>
+        <div class="divider"></div>
+        
+        <!-- Quick Stats -->
+        <div class="row">
+            <div class="col s12 m4">
+                <div class="card blue lighten-4">
+                    <div class="card-content">
+                        <span class="card-title">Upcoming Drives</span>
+                        <h4 class="center">{{ upcoming|length }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col s12 m4">
+                <div class="card orange lighten-4">
+                    <div class="card-content">
+                        <span class="card-title">Past Drives</span>
+                        <h4 class="center">{{ past|length }}</h4>
+                    </div>
+                </div>
+            </div>
+            <div class="col s12 m4">
+                <div class="card green lighten-4">
+                    <div class="card-content">
+                        <span class="card-title">Total</span>
+                        <h4 class="center">{{ upcoming|length + past|length }}</h4>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Tabs for Upcoming vs Past -->
+        <div class="row">
+            <div class="col s12">
+                <ul class="tabs">
+                    <li class="tab col s6"><a href="#upcoming" class="active">Upcoming ({{ upcoming|length }})</a></li>
+                    <li class="tab col s6"><a href="#past">Past ({{ past|length }})</a></li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Upcoming Drives Tab -->
+        <div id="upcoming" class="col s12">
+            {% if upcoming %}
+            <div class="row">
+                {% for drive in upcoming %}
+                <div class="col s12 m6 l4">
+                    <div class="card hoverable">
+                        <div class="card-content">
+                            <span class="card-title">
+                                Drive #{{ drive.id }}
+                                <span class="badge 
+                                    {% if drive.status == 'Upcoming' %}blue
+                                    {% elif drive.status == 'In Progress' %}orange
+                                    {% else %}grey{% endif %}">
+                                    {{ drive.status }}
+                                </span>
+                            </span>
+                            
+                            <div class="drive-info">
+                                <p><strong>Date:</strong> {{ drive.date }}</p>
+                                <p><strong>Time:</strong> {{ drive.time }}</p>
+                                <p><strong>Location:</strong> {{ drive.area.name }}, {{ drive.street.name }}</p>
+                                <p><strong>Driver ID:</strong> {{ drive.driverId }}</p>
+                                
+                                {% if drive.eta %}
+                                <p><strong>ETA:</strong> {{ drive.eta }}</p>
+                                {% endif %}
+                                
+                                {% if drive.menu %}
+                                <p><strong>Menu:</strong> {{ drive.menu|truncate(50) }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <!-- Check if resident already has a stop for this drive -->
+                            {% set has_stop = drive.id in current_user.subscribed_drives %}
+                            {% set is_subscribed = drive.id in current_user.subscribed_drives %}
+                            
+                            <div class="row" style="margin-top: 15px;">
+                                <div class="col s12">
+                                    <a href="/resident/drive/{{ drive.id }}" class="btn-small blue waves-effect waves-light">
+                                        <i class="material-icons left">visibility</i> View Details
+                                    </a>
+                                    
+                                    {% if drive.status == 'Upcoming' %}
+                                    {% if has_stop %}
+                                    <a href="/resident/drive/{{ drive.id }}/cancel_stop" class="btn-small red waves-effect waves-light">
+                                        <i class="material-icons left">cancel</i> Cancel Stop
+                                    </a>
+                                    {% else %}
+                                    <a href="/resident/drive/{{ drive.id }}/request_stop" class="btn-small green waves-effect waves-light">
+                                        <i class="material-icons left">pin_drop</i> Request Stop
+                                    </a>
+                                    {% endif %}
+                                    
+                                    {% if is_subscribed %}
+                                    <a href="/resident/drive/{{ drive.id }}/unsubscribe" class="btn-small orange waves-effect waves-light">
+                                        <i class="material-icons left">notifications_off</i> Unsubscribe
+                                    </a>
+                                    {% else %}
+                                    <a href="/resident/drive/{{ drive.id }}/subscribe" class="btn-small teal waves-effect waves-light">
+                                        <i class="material-icons left">notifications</i> Subscribe
+                                    </a>
+                                    {% endif %}
+                                    {% endif %}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="center" style="padding: 40px;">
+                <i class="material-icons large blue-text">schedule</i>
+                <h5>No Upcoming Drives</h5>
+                <p>There are no upcoming drives scheduled in your area.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Past Drives Tab -->
+        <div id="past" class="col s12">
+            {% if past %}
+            <div class="row">
+                {% for drive in past %}
+                <div class="col s12 m6 l4">
+                    <div class="card hoverable grey lighten-4">
+                        <div class="card-content">
+                            <span class="card-title">
+                                Drive #{{ drive.id }}
+                                <span class="badge 
+                                    {% if drive.status == 'Completed' %}green
+                                    {% elif drive.status == 'Cancelled' %}red
+                                    {% else %}grey{% endif %}">
+                                    {{ drive.status }}
+                                </span>
+                            </span>
+                            
+                            <div class="drive-info">
+                                <p><strong>Date:</strong> {{ drive.date }}</p>
+                                <p><strong>Time:</strong> {{ drive.time }}</p>
+                                <p><strong>Location:</strong> {{ drive.area.name }}, {{ drive.street.name }}</p>
+                                <p><strong>Driver ID:</strong> {{ drive.driverId }}</p>
+                                
+                                {% if drive.menu %}
+                                <p><strong>Menu:</strong> {{ drive.menu|truncate(30) }}</p>
+                                {% endif %}
+                            </div>
+                            
+                            <div class="row" style="margin-top: 15px;">
+                                <div class="col s12">
+                                    <a href="/resident/drive/{{ drive.id }}" class="btn-small blue waves-effect waves-light">
+                                        <i class="material-icons left">history</i> View Details
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="center" style="padding: 40px;">
+                <i class="material-icons large grey-text">history</i>
+                <h5>No Past Drives</h5>
+                <p>There are no past drives in your area.</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Quick Actions -->
+        <div class="row">
+            <div class="col s12">
+                <div class="card">
+                    <div class="card-content">
+                        <span class="card-title">Quick Actions</span>
+                        <div class="row">
+                            <div class="col s12 m4">
+                                <a href="/resident/dashboard" class="btn blue waves-effect waves-light full-width">
+                                    <i class="material-icons left">dashboard</i>Back to Dashboard
+                                </a>
+                            </div>
+                            <div class="col s12 m4">
+                                <a href="/map" class="btn green waves-effect waves-light full-width">
+                                    <i class="material-icons left">map</i>View Map
+                                </a>
+                            </div>
+                            <div class="col s12 m4">
+                                <a href="/resident/settings" class="btn orange waves-effect waves-light full-width">
+                                    <i class="material-icons left">settings</i>Notification Settings
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tabs
+        var tabs = document.querySelectorAll('.tabs');
+        M.Tabs.init(tabs);
+        
+        // Initialize tooltips
+        var tooltips = document.querySelectorAll('.tooltipped');
+        M.Tooltip.init(tooltips);
+        
+        // Confirm before canceling a stop
+        document.addEventListener('click', function(e) {
+            if (e.target.closest('a[href*="/cancel_stop"]')) {
+                e.preventDefault();
+                var url = e.target.closest('a').href;
+                if (confirm('Are you sure you want to cancel this stop request?')) {
+                    window.location.href = url;
+                }
+            }
+        });
+    });
+</script>
+
+<style>
+    .badge {
+        padding: 4px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        color: white;
+        float: right;
+    }
+    
+    .badge.blue { background-color: #2196F3; }
+    .badge.orange { background-color: #FF9800; }
+    .badge.green { background-color: #4CAF50; }
+    .badge.red { background-color: #F44336; }
+    .badge.grey { background-color: #9E9E9E; }
+    .badge.teal { background-color: #009688; }
+    
+    .drive-info {
+        margin: 10px 0;
+        padding: 10px;
+        background-color: rgba(255, 255, 255, 0.5);
+        border-radius: 5px;
+    }
+    
+    .drive-info p {
+        margin: 5px 0;
+        font-size: 14px;
+    }
+    
+    .card-title {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .tabs .tab a {
+        color: #8d6e63;
+    }
+    
+    .tabs .tab a.active {
+        color: #5d4037;
+    }
+    
+    .tabs .indicator {
+        background-color: #8d6e63;
+    }
+    
+    .btn-small {
+        margin: 2px;
+    }
+</style>
+{% endblock %}

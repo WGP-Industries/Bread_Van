@@ -1,0 +1,114 @@
+{% extends "layout.html" %}
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12 m8 offset-m2">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center">Create Account</span>
+                
+                <form method="POST" action="/auth/signup">
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input id="username" type="text" name="username" class="validate" required>
+                            <label for="username">Username</label>
+                        </div>
+                        
+                        <div class="input-field col s12 m6">
+                            <input id="password" type="password" name="password" class="validate" required>
+                            <label for="password">Password</label>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <select name="role" id="role" required onchange="toggleRoleFields()">
+                                <option value="" disabled selected>Choose your role</option>
+                                <option value="resident">Resident</option>
+                                <option value="driver">Driver</option>
+                            </select>
+                            <label>Account Type</label>
+                        </div>
+                    </div>
+                    
+                    <!-- Resident Fields -->
+                    <div id="resident-fields" style="display: none;">
+                        <div class="row">
+                            <div class="input-field col s12 m4">
+                                <select name="area_id" id="area_id" required>
+                                    <option value="" disabled selected>Select Area</option>
+                                    {% for area in areas %}
+                                    <option value="{{ area.id }}">{{ area.name }}</option>
+                                    {% endfor %}
+                                </select>
+                                <label>Area</label>
+                            </div>
+                            
+                            <div class="input-field col s12 m4">
+                                <select name="street_id" id="street_id" required disabled>
+                                    <option value="" disabled selected>Select Street</option>
+                                </select>
+                                <label>Street</label>
+                            </div>
+                            
+                            <div class="input-field col s12 m4">
+                                <input id="house_number" type="number" name="house_number" class="validate">
+                                <label for="house_number">House Number</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Driver Fields -->
+                    <div id="driver-fields" style="display: none;">
+                        <div class="row">
+                            <div class="input-field col s12">
+                                <input id="driver_license" type="text" name="driver_license" class="validate">
+                                <label for="driver_license">Driver License Number</label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="center">
+                        <button type="submit" class="btn green waves-effect waves-light">
+                            <i class="material-icons left">person_add</i>Create Account
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function toggleRoleFields() {
+    const role = document.getElementById('role').value;
+    document.getElementById('resident-fields').style.display = role === 'resident' ? 'block' : 'none';
+    document.getElementById('driver-fields').style.display = role === 'driver' ? 'block' : 'none';
+    
+    // Enable/disable street select based on area selection
+    if (role === 'resident') {
+        document.getElementById('area_id').addEventListener('change', function() {
+            const areaId = this.value;
+            const streetSelect = document.getElementById('street_id');
+            streetSelect.disabled = !areaId;
+            
+            if (areaId) {
+                fetch(`/streets?area_id=${areaId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        streetSelect.innerHTML = '<option value="" disabled selected>Select Street</option>';
+                        data.items.forEach(street => {
+                            const option = document.createElement('option');
+                            option.value = street.id;
+                            option.textContent = street.name;
+                            streetSelect.appendChild(option);
+                        });
+                        M.FormSelect.init(streetSelect);
+                    });
+            }
+        });
+    }
+}
+</script>
+{% endblock %}

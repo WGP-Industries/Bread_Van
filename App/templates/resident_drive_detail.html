@@ -1,0 +1,194 @@
+{% extends "layout.html" %}
+{% block title %}Drive #{{ drive.id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <a href="/resident/drives" class="btn-flat waves-effect">
+            <i class="material-icons left">arrow_back</i>Back to Drives
+        </a>
+        <h4>Drive #{{ drive.id }}</h4>
+        <div class="divider"></div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Drive Information -->
+    <div class="col s12 m8">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">
+                    {{ drive.area.name }}, {{ drive.street.name }}
+                    <span class="badge 
+                        {% if drive.status == 'Upcoming' %}blue
+                        {% elif drive.status == 'In Progress' %}orange
+                        {% elif drive.status == 'Completed' %}green
+                        {% elif drive.status == 'Cancelled' %}red
+                        {% else %}grey{% endif %}">
+                        {{ drive.status }}
+                    </span>
+                </span>
+                
+                <div class="row">
+                    <div class="col s6">
+                        <p><strong>Date:</strong> {{ drive.date }}</p>
+                        <p><strong>Time:</strong> {{ drive.time }}</p>
+                        {% if drive.eta %}
+                        <p><strong>ETA:</strong> {{ drive.eta }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col s6">
+                        <p><strong>Driver ID:</strong> {{ drive.driverId }}</p>
+                        <p><strong>Area:</strong> {{ drive.area.name }}</p>
+                        <p><strong>Street:</strong> {{ drive.street.name }}</p>
+                    </div>
+                </div>
+                
+                {% if drive.menu %}
+                <div class="section">
+                    <h6>Menu</h6>
+                    <p>{{ drive.menu }}</p>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-action">
+                {% if drive.status == "Upcoming" or drive.status == "In Progress" %}
+                    {% if has_stop %}
+                    <a href="/resident/drive/{{ drive.id }}/cancel_stop" 
+                       class="btn red waves-effect waves-light"
+                       onclick="return confirm('Are you sure you want to cancel this stop request?')">
+                        <i class="material-icons left">cancel</i>Cancel Stop Request
+                    </a>
+                    {% else %}
+                    <a href="/resident/drive/{{ drive.id }}/request_stop" 
+                       class="btn green waves-effect waves-light">
+                        <i class="material-icons left">pin_drop</i>Request Stop
+                    </a>
+                    {% endif %}
+                    
+                    {% if is_subscribed %}
+                    <a href="/resident/drive/{{ drive.id }}/unsubscribe" 
+                       class="btn orange waves-effect waves-light">
+                        <i class="material-icons left">notifications_off</i>Unsubscribe
+                    </a>
+                    {% else %}
+                    <a href="/resident/drive/{{ drive.id }}/subscribe" 
+                       class="btn teal waves-effect waves-light">
+                        <i class="material-icons left">notifications</i>Subscribe
+                    </a>
+                    {% endif %}
+                {% endif %}
+                
+                <a href="/map?drive={{ drive.id }}" class="btn blue waves-effect waves-light">
+                    <i class="material-icons left">map</i>View on Map
+                </a>
+            </div>
+        </div>
+        
+        <!-- Drive Description -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Drive Information</span>
+                <p>This drive is scheduled for {{ drive.date }} at {{ drive.time }}.</p>
+                <p>You will receive notifications when:</p>
+                <ul class="browser-default">
+                    <li>The driver updates the menu</li>
+                    <li>The ETA changes</li>
+                    <li>The driver is nearby (if you have arrival alerts enabled)</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Sidebar -->
+    <div class="col s12 m4">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Quick Actions</span>
+                
+                <div class="collection">
+                    <a href="/map?drive={{ drive.id }}" class="collection-item">
+                        <i class="material-icons left">map</i>View on Map
+                    </a>
+                    <a href="/resident/dashboard" class="collection-item">
+                        <i class="material-icons left">dashboard</i>Back to Dashboard
+                    </a>
+                    <a href="/resident/drives" class="collection-item">
+                        <i class="material-icons left">list</i>All Drives
+                    </a>
+                    <a href="/resident/settings" class="collection-item">
+                        <i class="material-icons left">settings</i>Notification Settings
+                    </a>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Drive Status -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Drive Status</span>
+                <p><strong>Status:</strong> {{ drive.status }}</p>
+                <p><strong>Date:</strong> {{ drive.date }}</p>
+                <p><strong>Time:</strong> {{ drive.time }}</p>
+            </div>
+        </div>
+        
+        <!-- Your Stop Status -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Your Stop Status</span>
+                {% if has_stop %}
+                <p class="green-text">
+                    <i class="material-icons left">check_circle</i>
+                    You have requested a stop for this drive
+                </p>
+                <p>You will be notified when the driver is approaching.</p>
+                {% else %}
+                <p class="orange-text">
+                    <i class="material-icons left">info</i>
+                    No stop requested yet
+                </p>
+                <p>Request a stop to get bread delivered to your location.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltips = document.querySelectorAll('.tooltipped');
+        M.Tooltip.init(tooltips);
+    });
+</script>
+
+<style>
+    .badge {
+        padding: 5px 10px;
+        border-radius: 12px;
+        color: white;
+        font-size: 12px;
+        float: right;
+    }
+    
+    .badge.blue { background-color: #2196F3; }
+    .badge.orange { background-color: #FF9800; }
+    .badge.green { background-color: #4CAF50; }
+    .badge.red { background-color: #F44336; }
+    .badge.grey { background-color: #9E9E9E; }
+    .badge.teal { background-color: #009688; }
+    
+    .collection a.collection-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .collection a.collection-item i {
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
