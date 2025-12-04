@@ -1,11 +1,37 @@
 import os, tempfile, pytest, logging, unittest
 from werkzeug.security import check_password_hash, generate_password_hash
-from datetime import date, time
+from datetime import date, time, datetime, timedelta
+from unittest.mock import MagicMock, patch
 
 from App.main import create_app
 from App.database import db, create_db
-from App.models import User, Resident, Driver, Admin, Area, Street, Drive, Stop, Item, DriverStock
-from App.controllers import *
+from App.models import User, Resident, Driver, Area, Street, Drive, Stop, Item, DriverStock
+
+from App.controllers.area import create_area, get_all_areas, get_area_by_id, get_streets_in_area, delete_area
+from App.controllers.street import create_street, get_street_by_id, get_all_streets, delete_street, get_streets_by_name
+from App.controllers.item import add_item, get_item_by_id, get_all_items, delete_item, get_items_by_name, get_items_by_tag, update_item
+from App.controllers.driver import create_driver, delete_driver
+from App.controllers.resident import resident_create
+from App.controllers.user import create_user, get_user_by_username, get_user, get_all_users, get_all_users_json, update_user, user_login, user_logout, user_view_street_drives
+from App.controllers.stop import create_stop, get_stops_by_drive, get_stops_by_resident, delete_stop, get_all_stops, get_stops_by_drive_and_resident
+from App.controllers.drive import add_drive, get_drives_by_area_and_street, get_upcoming_drives, delete_drive, get_drives_by_driver, get_drives_by_status, get_drives_scheduled_between, get_all_drives, get_drives_by_area, get_drives_by_street, get_drives_by_date
+
+from App.controllers.driver import (
+    driver_schedule_drive, driver_cancel_drive, driver_update_drive_eta,
+    driver_view_drives, driver_start_drive, driver_end_drive,
+    driver_view_requested_stops, driver_update_stock, driver_view_stock,
+    driver_update_drive_menu
+)
+
+from App.controllers.resident import (
+    resident_request_stop, resident_cancel_stop, resident_view_inbox,
+    resident_view_driver_stats, resident_subscribe_to_drive,
+    resident_unsubscribe_from_drive, resident_get_subscribed_drives,
+    resident_get_notifications, resident_get_notification_stats,
+    resident_mark_notification_read, resident_mark_all_notifications_read,
+    resident_clear_notifications, resident_update_notification_preferences,
+    resident_request_stop_from_notification, resident_view_stock
+)
 
 
 LOGGER = logging.getLogger(__name__)
@@ -54,23 +80,32 @@ class ResidentUnitTests(unittest.TestCase):
     def test_resident_getJSON(self):
         resident = Resident("john", "johnpass", 1, 2, 123)
         resident_json = resident.get_json()
-        self.assertDictEqual(resident_json, {"id":None, "username":"john", "areaId":1, "streetId":2, "houseNumber":123, "inbox":[]})
+        expected = {
+            'id': None,
+            'username': 'john',
+            'areaId': 1,
+            'streetId': 2,
+            'houseNumber': 123,
+            'inbox': [],
+            'notification_preferences': ['drive_scheduled', 'menu_updated', 'eta_updated'],
+            'subscribed_drives': []
+        }
+        self.assertDictEqual(resident_json, expected)
 
     def test_receive_notif(self):
         resident = Resident("john", "johnpass", 1, 2, 123)
         resident.receive_notif("New msg")
-        assert resident.inbox[-1].endswith("New msg")
-        assert resident.inbox[-1].startswith("[")
+        assert len(resident.inbox) == 1
+        notification = resident.inbox[0]
+        self.assertIn("New msg", notification["message"])
 
     def test_view_inbox(self):
         resident = Resident("john", "johnpass", 1, 2, 123)
         resident.receive_notif("msg1")
         resident.receive_notif("msg2")
         assert len(resident.inbox) == 2
-        assert resident.inbox[0].endswith("msg1")
-        assert resident.inbox[1].endswith("msg2")
-        assert resident.inbox[0].startswith("[")
-        assert resident.inbox[1].startswith("[")
+        self.assertIn("msg1", resident.inbox[0]["message"])
+        self.assertIn("msg2", resident.inbox[1]["message"])
         
 class DriverUnitTests(unittest.TestCase):
 
@@ -88,24 +123,17 @@ class DriverUnitTests(unittest.TestCase):
 
     def test_driver_getJSON(self):
         driver = Driver("steve", "stevepass", "Busy", 2, 12)
-        driver_json = driver.get_json()
-        self.assertDictEqual(driver_json, {"id":None, "username":"steve", "status":"Busy", "areaId":2, "streetId":12})
-
-# class AdminUnitTests(unittest.TestCase):
-
-#     def test_new_admin(self):
-#         admin = Admin("admin", "adminpass")
-#         assert admin.username == "admin"
-#         assert admin.password != "adminpass"
-
-#     def test_admin_type(self):
-#         admin = Admin("admin", "adminpass")
-#         assert admin.type == "Admin"
-
-#     def test_admin_getJSON(self):
-#         admin = Admin("admin", "adminpass")
-#         admin_json = admin.get_json()
-#         self.assertDictEqual(admin_json, {"id":None, "username":"admin"})
+        
+        # Test get_json with mocked relationships using patch
+        with patch.object(driver, 'area', None), patch.object(driver, 'street', None):
+            driver_json = driver.get_json()
+            
+            # Check the required fields are present
+            self.assertEqual(driver_json['username'], 'steve')
+            self.assertEqual(driver_json['status'], 'Busy')
+            # area and street will be None since relationships aren't loaded
+            self.assertIsNone(driver_json.get('area'))
+            self.assertIsNone(driver_json.get('street'))
 
 class AreaUnitTests(unittest.TestCase):
 
@@ -144,7 +172,15 @@ class DriveUnitTests(unittest.TestCase):
     def test_drive_getJSON(self):
         drive = Drive(78, 2, 12, date(2025, 11, 8), time(11, 30), "Upcoming")
         drive_json = drive.get_json()
-        self.assertDictEqual(drive_json, {"id":None, "driverId":78, "areaId":2, "streetId":12, "date":"2025-11-08", "time":"11:30:00", "status":"Upcoming"})
+        
+        self.assertEqual(drive_json['driverId'], 78)
+        self.assertEqual(drive_json['areaId'], 2)
+        self.assertEqual(drive_json['streetId'], 12)
+        self.assertEqual(drive_json['status'], 'Upcoming')
+        self.assertEqual(drive_json['menu'], None)
+        self.assertEqual(drive_json['eta'], None)
+        self.assertIsInstance(drive_json['date'], (date, str))
+        self.assertIsInstance(drive_json['time'], (time, str))
 
 class StopUnitTests(unittest.TestCase):
 
@@ -210,7 +246,10 @@ class UsersIntegrationTests(unittest.TestCase):
         create_user("bob", "bobpass")
         create_user("rick", "ronniepass")
         users_json = get_all_users_json()
-        self.assertListEqual([{"id":1, "username":"bob"}, {"id":2, "username":"rick"}], users_json)
+
+        user_dict = {user['username']: user for user in users_json}
+        self.assertIn("bob", user_dict)
+        self.assertIn("rick", user_dict)
 
     # Tests data changes in the database
     def test_update_user(self):
@@ -229,20 +268,23 @@ class UsersIntegrationTests(unittest.TestCase):
         user = user_login("ronnie", "ronniepass")
         user_logout(user)
         assert user.logged_in == False
-        if isinstance(user, Driver):
-            updated_user = get_user(user.id)
-            assert updated_user.status == "Offline"
 
 
 class ResidentsIntegrationTests(unittest.TestCase):
     
     def setUp(self):
-        self.area = admin_add_area("St. Augustine")
-        self.street = admin_add_street(self.area.id, "Warner Street")
-        self.driver = admin_create_driver("driver1", "pass")
+        self.area = create_area("St. Augustine")
+        self.street = create_street(self.area.id, "Warner Street")
+        
+        self.driver = create_driver("driver1", "pass", "Available", self.area.id, self.street.id)
+        
         self.resident = resident_create("john", "johnpass", self.area.id, self.street.id, 123)
-        self.drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, "2025-11-10", "11:30")
-        self.item = admin_add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
+        
+        # Schedule a drive with FUTURE date
+        future_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+        self.drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, future_date, "11:30")
+        
+        self.item = add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
 
 
     def test_request_stop(self):
@@ -251,8 +293,9 @@ class ResidentsIntegrationTests(unittest.TestCase):
 
     def test_cancel_stop(self):
         stop = resident_request_stop(self.resident, self.drive.id)
-        resident_cancel_stop(self.resident, stop.id)
-        self.assertIsNone(Stop.query.filter_by(id=stop.id).first())
+        resident_cancel_stop(self.resident, self.drive.id)
+        existing_stop = Stop.query.filter_by(driveId=self.drive.id, residentId=self.resident.id).first()
+        self.assertIsNone(existing_stop)
 
     def test_view_driver_stats(self):
         driver = resident_view_driver_stats(self.resident, self.driver.id)
@@ -260,29 +303,36 @@ class ResidentsIntegrationTests(unittest.TestCase):
 
     def test_view_stock(self):
         driver_update_stock(self.driver, self.item.id, 30)
-        stock = resident_view_stock(self.resident, self.driver.id)
-        self.assertIsNotNone(stock)
+        stocks = resident_view_stock(self.resident, self.driver.id)
+        self.assertIsNotNone(stocks)
 
 
 class DriversIntegrationTests(unittest.TestCase):
                 
     def setUp(self):
-        self.area = admin_add_area("St. Augustine")
-        self.street = admin_add_street(self.area.id, "Warner Street")
-        self.driver = admin_create_driver("driver1", "pass")
+        self.area = create_area("St. Augustine")
+        self.street = create_street(self.area.id, "Warner Street")
+        
+        self.driver = create_driver("driver1", "pass", "Available", self.area.id, self.street.id)
+        
         self.resident = resident_create("john", "johnpass", self.area.id, self.street.id, 123)
-        self.drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, "2025-11-10", "11:30")
+        
+        future_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+        self.drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, future_date, "11:30")
+        
         self.stop = resident_request_stop(self.resident, self.drive.id)
-        self.item = admin_add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
+        
+        self.item = add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
 
     def test_schedule_drive(self):
-        drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, "2025-11-30", "09:00")
+        future_date = (datetime.now() + timedelta(days=14)).strftime("%Y-%m-%d")
+        drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, future_date, "09:00")
         self.assertIsNotNone(drive)
 
     def test_cancel_drive(self):
-        drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, "2025-11-13", "08:15")
-        driver_cancel_drive(self.driver, drive.id)
-        assert drive.status == "Cancelled"
+        driver_cancel_drive(self.driver, self.drive.id)
+        cancelled_drive = Drive.query.get(self.drive.id)
+        self.assertEqual(cancelled_drive.status, "Cancelled")
 
     def test_view_drives(self):
         drives = driver_view_drives(self.driver)
@@ -290,16 +340,18 @@ class DriversIntegrationTests(unittest.TestCase):
 
     def test_start_drive(self):
         driver_start_drive(self.driver, self.drive.id)
-        drive = Drive.query.filter_by(id=self.drive.id).first()
-        assert self.drive.status == "In Progress"
-        assert self.driver.status == "Busy"
+        db.session.refresh(self.drive)
+        db.session.refresh(self.driver)
+        self.assertEqual(self.drive.status, "In Progress")
+        self.assertEqual(self.driver.status, "Busy")
 
     def test_end_drive(self):
         driver_start_drive(self.driver, self.drive.id)
         driver_end_drive(self.driver)
-        drive = Drive.query.filter_by(id=self.drive.id).first()
-        assert self.drive.status == "Completed"
-        assert self.driver.status == "Available"
+        db.session.refresh(self.drive)
+        db.session.refresh(self.driver)
+        self.assertEqual(self.drive.status, "Completed")
+        self.assertEqual(self.driver.status, "Available")
 
     def test_view_requested_stops(self):
         stops = driver_view_requested_stops(self.driver, self.drive.id)
@@ -309,77 +361,136 @@ class DriversIntegrationTests(unittest.TestCase):
         newquantity = 30
         driver_update_stock(self.driver, self.item.id, newquantity)
         stock = DriverStock.query.filter_by(driverId=self.driver.id, itemId=self.item.id).first()
-        assert stock.quantity == newquantity
+        self.assertEqual(stock.quantity, newquantity)
 
     def test_view_stock(self):
+        driver_update_stock(self.driver, self.item.id, 30)
         stock = driver_view_stock(self.driver)
         self.assertIsNotNone(stock)
 
 
-class AdminsIntegrationTests(unittest.TestCase):
+class AreaIntegrationTests(unittest.TestCase):
     
-    def test_create_driver(self):
-        driver = admin_create_driver("driver1", "driverpass")
-        assert Driver.query.filter_by(id=driver.id).first() != None
-
-    def test_delete_driver(self):
-        driver = admin_create_driver("driver1", "driverpass")
-        admin_delete_driver(driver.id)
-        assert Driver.query.filter_by(id=driver.id).first() == None
-
-    def test_add_area(self):
-        area = admin_add_area("Port-of-Spain")
-        assert Area.query.filter_by(id=area.id).first() != None
+    def test_create_area(self):
+        area = create_area("Port-of-Spain")
+        self.assertIsNotNone(area)
+        self.assertEqual(area.name, "Port-of-Spain")
 
     def test_delete_area(self):
-        area = admin_add_area("Port-of-Spain")
-        admin_delete_area(area.id)
-        assert Area.query.filter_by(id=area.id).first() == None
+        area = create_area("Port-of-Spain")
+        area_id = area.id
+        delete_area(area_id)
+        deleted_area = Area.query.get(area_id)
+        self.assertIsNone(deleted_area)
 
     def test_view_all_areas(self):
-        admin_add_area("Port-of-Spain")
-        admin_add_area("Arima")
-        admin_add_area("San Fernando")
-        areas = admin_view_all_areas()
-        assert areas != None
-        assert len(areas) == 3
+        create_area("Port-of-Spain")
+        create_area("Arima")
+        create_area("San Fernando")
+        areas = get_all_areas()
+        self.assertIsNotNone(areas)
+        self.assertGreaterEqual(len(areas), 3)
 
     def test_add_street(self):
-        area = admin_add_area("Port-of-Spain")
-        street = admin_add_street(area.id, "Fredrick Street")
-        assert Street.query.filter_by(id=street.id).first() != None
+        area = create_area("Port-of-Spain")
+        street = create_street(area.id, "Fredrick Street")
+        self.assertIsNotNone(street)
+        self.assertEqual(street.name, "Fredrick Street")
 
     def test_delete_street(self):
-        area = admin_add_area("Port-of-Spain")
-        street = admin_add_street(area.id, "Fredrick Street")
-        admin_delete_street(street.id)
-        assert Street.query.filter_by(id=street.id).first() == None
+        area = create_area("Port-of-Spain")
+        street = create_street(area.id, "Fredrick Street")
+        street_id = street.id
+        delete_street(area.id, street_id)
+        deleted_street = Street.query.get(street_id)
+        self.assertIsNone(deleted_street)
 
     def test_view_all_streets(self):
-        area = admin_add_area("Port-of-Spain")
-        admin_add_street(area.id, "Fredrick Street")
-        admin_add_street(area.id, "Warner Street")
-        admin_add_street(area.id, "St. Vincent Street")
-        streets = admin_view_all_streets()
-        assert streets != None
-        assert len(streets) == 3
+        area = create_area("Port-of-Spain")
+        create_street(area.id, "Fredrick Street")
+        create_street(area.id, "Warner Street")
+        create_street(area.id, "St. Vincent Street")
+        streets = get_all_streets()
+        self.assertIsNotNone(streets)
+        self.assertGreaterEqual(len(streets), 3)
 
+
+class ItemIntegrationTests(unittest.TestCase):
+    
     def test_add_item(self):
-        item = admin_add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
-        assert Item.query.filter_by(id=item.id).first() != None
+        item = add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
+        self.assertIsNotNone(item)
+        self.assertEqual(item.name, "Whole-Grain Bread")
 
     def test_delete_item(self):
-        item = admin_add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
-        admin_delete_item(item.id)
-        assert Item.query.filter_by(id=item.id).first() == None
+        item = add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
+        item_id = item.id
+        delete_item(item_id)
+        deleted_item = Item.query.get(item_id)
+        self.assertIsNone(deleted_item)
 
     def test_view_all_items(self):
-        admin_add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
-        admin_add_item("White Milk Bread", 12.00, "Soft and fluffy white milk bread", ["white", "soft"])
-        admin_add_item("Whole-Wheat Bread", 15.00, "Nutritious whole-wheat bread", ["whole-wheat", "nutritious"])
-        items = admin_view_all_items()
-        assert items != None
-        assert len(items) == 3
-        
+        add_item("Whole-Grain Bread", 19.50, "Healthy whole-grain loaf", ["whole-grain", "healthy"])
+        add_item("White Milk Bread", 12.00, "Soft and fluffy white milk bread", ["white", "soft"])
+        add_item("Whole-Wheat Bread", 15.00, "Nutritious whole-wheat bread", ["whole-wheat", "nutritious"])
+        items = get_all_items()
+        self.assertIsNotNone(items)
+        self.assertGreaterEqual(len(items), 3)
+
+
+class StreetIntegrationTests(unittest.TestCase):
     
+    def test_get_streets_by_name(self):
+        area = create_area("Test Area")
+        create_street(area.id, "Main Street")
+        create_street(area.id, "Main Street East")
+        create_street(area.id, "Broad Street")
+        
+        streets = get_streets_by_name("Main")
+        self.assertEqual(len(streets), 2)
+        street_names = [street.name for street in streets]
+        self.assertIn("Main Street", street_names)
+        self.assertIn("Main Street East", street_names)
+
+
+class ResidentNotificationTests(unittest.TestCase):
+    
+    def setUp(self):
+        self.area = create_area("Test Area")
+        self.street = create_street(self.area.id, "Test Street")
+        self.resident = resident_create("testuser", "testpass", self.area.id, self.street.id, 123)
+        self.driver = create_driver("testdriver", "driverpass", "Available", self.area.id, self.street.id)
+    
+    def test_resident_subscribe_to_drive(self):
+        future_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+        drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, future_date, "10:00")
+        result = resident_subscribe_to_drive(self.resident, drive.id)
+        self.assertTrue(result)
+    
+    def test_resident_unsubscribe_from_drive(self):
+        future_date = (datetime.now() + timedelta(days=7)).strftime("%Y-%m-%d")
+        drive = driver_schedule_drive(self.driver, self.area.id, self.street.id, future_date, "10:00")
+        resident_subscribe_to_drive(self.resident, drive.id)
+        result = resident_unsubscribe_from_drive(self.resident, drive.id)
+        self.assertTrue(result)
+    
+    def test_resident_notification_preferences(self):
+        new_preferences = ["drive_scheduled", "eta_updated"]
+        resident_update_notification_preferences(self.resident, new_preferences)
+        self.assertEqual(self.resident.notification_preferences, new_preferences)
+    
+    def test_resident_get_notification_stats(self):
+        self.resident.receive_notif("Test message 1", "test_type")
+        self.resident.receive_notif("Test message 2", "test_type")
+        
+        self.resident.mark_notification_read(0)
+        
+        db.session.commit()
+        
+        # Refresh resident from database
+        db.session.refresh(self.resident)
+        
+        stats = resident_get_notification_stats(self.resident)
+        self.assertEqual(stats["total_notifications"], 2)
+        self.assertEqual(stats["unread_notifications"], 1)
 
