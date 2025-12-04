@@ -1,4 +1,4 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
 from flask_jwt_extended import jwt_required
 
 from App.api.security import role_required, current_user_id
@@ -51,6 +51,17 @@ def inbox():
     items = resident_controller.resident_view_inbox(resident)
     items = [i.get_json() if hasattr(i, 'get_json') else i for i in (items or [])]
     return jsonify({'items': items}), 200
+
+
+@resident_views.route('/resident/notifications', methods=['GET'])
+@jwt_required()
+def resident_notifications():
+    uid = current_user_id()
+    resident = user_controller.get_user(uid)
+
+    notifications = resident_controller.resident_view_inbox(resident)
+
+    return render_template("notification.html",notifications=notifications)
 
 
 @resident_views.route('/resident/driver-stats', methods=['GET'])

@@ -51,7 +51,7 @@
         {% if current_user %}
         <ul class="right">
             <li class="notification-wrapper">
-                <a href="/notifications">
+                <a href="/resident/notifications">
                     <i class="material-icons">notifications</i>
                     {% if current_user.get_unread_count() > 0 %}
                     <span class="notification-badge">{{ current_user.get_unread_count() }}</span>

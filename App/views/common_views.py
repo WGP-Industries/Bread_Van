@@ -29,11 +29,6 @@ def get_menu():
 def get_profile():
     return render_template("profile.html")
 
-@common_views.route('/notifications', methods=['GET'])
-@jwt_required()
-def get_notifications():
-    return render_template("notification.html")
-
 @common_views.route('/map', methods=['GET'])
 @jwt_required()
 def get_map():
