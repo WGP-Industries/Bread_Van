@@ -1,0 +1,59 @@
+{% extends "layout.html" %}
+{% block title %}Track Van{% endblock %}
+
+{% block content %}
+<h4 class="center">Live Bread Van Location</h4>
+
+<div id="map" style="height: 450px; border-radius: 10px;"></div>
+
+<div class="controls" style="display:flex; gap:10px; margin-bottom:20px;">
+    <button class="btn btn-set">Set Address</button>
+    <button class="btn btn-stop">Stop</button>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet/dist/leaflet.js"></script>
+
+<script>
+    let map = L.map('map').setView([10.6918, -61.2225], 15); // default view
+
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19
+    }).addTo(map);
+
+    let vanMarker = L.marker([10.6918, -61.2225], {icon: L.icon({iconUrl:'/static/van_icon.png', iconSize:[32,32]})})
+        .addTo(map)
+        .bindPopup("Bread Van");
+
+    let stopMarkers = [];
+
+    function updateMap() {
+        // Update van location
+        fetch("/van_location")
+            .then(r => r.json())
+            .then(data => {
+                vanMarker.setLatLng([data.lat, data.lng]);
+                map.setView([data.lat, data.lng], 15);
+            });
+
+        // Update resident stops
+        fetch("/resident/stops_for_map")
+            .then(r => r.json())
+            .then(data => {
+                // remove old markers
+                stopMarkers.forEach(m => map.removeLayer(m));
+                stopMarkers = [];
+
+                data.forEach(s => {
+                    let m = L.marker([s.lat, s.lng], {icon: L.icon({iconUrl:'/static/stop_icon.png', iconSize:[24,24]})})
+                        .addTo(map)
+                        .bindPopup(`Stop for Drive ${s.driveId}`);
+                    stopMarkers.push(m);
+                });
+            });
+    }
+
+    updateMap();
+    setInterval(updateMap, 5000);
+</script>
+{% endblock %}

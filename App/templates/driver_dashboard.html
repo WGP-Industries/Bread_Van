@@ -1,0 +1,150 @@
+{% extends "layout.html" %}
+{% block title %}Driver Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <h4>Driver Dashboard</h4>
+        <p class="grey-text">Welcome back, {{ current_user.username }}!</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Stats -->
+    <div class="col s12 m4">
+        <div class="card dashboard-card blue lighten-4">
+            <div class="card-content">
+                <span class="card-title">Status</span>
+                <h5 class="center">{{ current_user.status }}</h5>
+                {% if current_user.status == "Busy" %}
+                <p class="center">On a drive</p>
+                {% elif current_user.status == "Available" %}
+                <p class="center">Ready for work</p>
+                {% else %}
+                <p class="center">Offline</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col s12 m4">
+        <div class="card dashboard-card green lighten-4">
+            <div class="card-content">
+                <span class="card-title">Upcoming Drives</span>
+                <h5 class="center">{{ upcoming_drives|length }}</h5>
+                <p class="center">Scheduled</p>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col s12 m4">
+        <div class="card dashboard-card amber lighten-4">
+            <div class="card-content">
+                <span class="card-title">Stop Requests</span>
+                <h5 class="center">{{ pending_stops }}</h5>
+                <p class="center">Pending</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Quick Actions -->
+    <div class="col s12 m6">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Quick Actions</span>
+                <div class="row">
+                    <div class="col s12">
+                        <a href="/driver/drives/schedule" class="btn blue waves-effect waves-light full-width">
+                            <i class="material-icons left">add</i>Schedule New Drive
+                        </a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col s12">
+                        <a href="/map?driver=1" class="btn amber waves-effect waves-light full-width">
+                            <i class="material-icons left">location_on</i>Update Location
+                        </a>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col s12">
+                        <a href="/menu" class="btn purple waves-effect waves-light full-width">
+                            <i class="material-icons left">edit</i>Edit Menu
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Upcoming Drives -->
+    <div class="col s12 m6">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Next Drive</span>
+                {% if next_drive %}
+                <div class="drive-card status-{{ next_drive.status|lower }}">
+                    <h6>{{ next_drive.date }} at {{ next_drive.time }}</h6>
+                    <p><strong>Area:</strong> {{ next_drive.area.name }}</p>
+                    <p><strong>Street:</strong> {{ next_drive.street.name }}</p>
+                    <p><strong>Status:</strong> {{ next_drive.status }}</p>
+                    
+                    <div class="row" style="margin-top: 20px;">
+                        <div class="col s6">
+                            <a href="/driver/drives/{{ next_drive.id }}/start" 
+                               class="btn-small green waves-effect waves-light full-width">
+                                <i class="material-icons">play_arrow</i>Start
+                            </a>
+                        </div>
+                        <div class="col s6">
+                            <a href="/driver/drives/{{ next_drive.id }}/cancel" 
+                               class="btn-small red waves-effect waves-light full-width">
+                                <i class="material-icons">cancel</i>Cancel
+                            </a>
+                        </div>
+                    </div>
+                </div>
+                {% else %}
+                <p class="grey-text center">No upcoming drives scheduled</p>
+                <a href="/driver/drives/schedule" class="btn blue waves-effect waves-light full-width">
+                    Schedule Your First Drive
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Active Drive (if any) -->
+    {% if active_drive %}
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Active Drive</span>
+                <div class="row">
+                    <div class="col s12 m6">
+                        <p><strong>Location:</strong> {{ active_drive.area.name }}, {{ active_drive.street.name }}</p>
+                        <p><strong>Started:</strong> {{ active_drive.date }} {{ active_drive.time }}</p>
+                        <p><strong>Stop Requests:</strong> {{ active_stops|length }}</p>
+                    </div>
+                    <div class="col s12 m6">
+                        <a href="/driver/drives/{{ active_drive.id }}/requested-stops" 
+                           class="btn amber waves-effect waves-light full-width">
+                            <i class="material-icons left">list</i>View Stop Requests
+                        </a>
+                        <br><br>
+                        <a href="/driver/drives/{{ active_drive.id }}/end" 
+                           class="btn red waves-effect waves-light full-width">
+                            <i class="material-icons left">stop</i>End Drive
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

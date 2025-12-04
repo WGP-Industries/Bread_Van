@@ -14,6 +14,16 @@ auth_views = Blueprint('auth_views', __name__, template_folder='../templates')
 
 
 
+@auth_views.route('/login', methods=['GET'])
+def login_page():
+    return render_template('login.html')
+
+@auth_views.route('/signup', methods=['GET'])
+def signup_page():
+    from App.controllers import area as area_controller
+    areas = area_controller.get_all_areas()
+    return render_template('signup.html', areas=areas)
+
 
 '''
 Page/Action Routes
@@ -32,16 +42,16 @@ def login_action():
 
     if not token:
         flash('Bad username or password given')
-        return jsonify({'error': 'Invalid credentials'}), 401
+        return redirect(url_for('auth_views.login_page'))
 
     flash('Login Successful')
-    response = jsonify({'message': 'Login successful'})
+    response = redirect(url_for('index_views.index_page'))
     set_access_cookies(response, token)
     return response
 
 @auth_views.route('/logout', methods=['GET'])
 def logout_action():
-    response = jsonify({'message': 'Logged out'})
+    response = redirect(url_for('index_views.index_page'))
     flash("Logged Out!")
     unset_jwt_cookies(response)
     return response
@@ -99,3 +109,5 @@ def signup_api():
         user = create_user(username, password)
         out = user.get_json() if hasattr(user, 'get_json') else {'id': user.id}
         return jsonify(out), 201
+    
+

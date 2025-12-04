@@ -1,70 +1,164 @@
 <!doctype html>
 <html>
-  <head>
-  
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-     <!--Import Google Icon Font-->
-    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
-    <!-- Compiled and minified CSS -->
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
-    <!--Let browser know website is optimized for mobile-->
+<head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-    <title>{% block title %}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <title>{% block title %}{% endblock %} - Bread Van</title>
+    <style>
+        body {
+            background: url('{{ url_for("static", filename="bread.jpg") }}') no-repeat center center fixed;
+            background-size: cover;
+            min-height: 100vh;
+        }
+        .main-content {
+            background-color: rgba(255, 255, 255, 0.92);
+            padding: 2rem;
+            border-radius: 8px;
+            margin-top: 20px;
+            min-height: 70vh;
+        }
+        nav.bread-nav { background: #8d6e63; }
+        .brand-logo { font-weight: 600; letter-spacing: 1px; }
+        .notification-badge {
+            background: #e53935;
+            color: white;
+            border-radius: 50%;
+            padding: 2px 6px;
+            font-size: 0.8rem;
+            position: absolute;
+            top: 10px;
+            right: 10px;
+        }
+        .dashboard-card { min-height: 200px; }
+        .status-upcoming { border-left: 5px solid #2196F3; }
+        .status-inprogress { border-left: 5px solid #FF9800; }
+        .status-completed { border-left: 5px solid #4CAF50; }
+        .status-cancelled { border-left: 5px solid #F44336; }
+    </style>
+</head>
+<body>
 
-  </head>
-  <body>
+<nav class="bread-nav">
+    <div class="nav-wrapper">
+        <a href="/" class="brand-logo center">Bread Van 🍞</a>
+        <a href="#" data-target="mobile-demo" class="sidenav-trigger"><i class="material-icons">menu</i></a>
+        
+        <ul class="left hide-on-med-and-down">
+            <li><a href="/"><i class="material-icons left">home</i>Home</a></li>
+            <li><a href="/menu"><i class="material-icons left">restaurant_menu</i>Menu</a></li>
+            <li><a href="/map"><i class="material-icons left">location_on</i>Live Map</a></li>
+            
+            {% if current_user %}
+                {% if current_user.type == 'Driver' %}
+                <li><a href="/driver/dashboard"><i class="material-icons left">directions_car</i>Driver Dashboard</a></li>
+                <li><a href="/driver/drives"><i class="material-icons left">schedule</i>My Drives</a></li>
+                {% elif current_user.type == 'Resident' %}
+                <li><a href="/resident/dashboard"><i class="material-icons left">home</i>Resident Dashboard</a></li>
+                <li><a href="/resident/stops"><i class="material-icons left">pin_drop</i>My Stops</a></li>
+                {% endif %}
+            {% endif %}
+        </ul>
+
+        <ul class="right hide-on-med-and-down">
+            {% if current_user %}
+                <li class="notification-wrapper">
+                    <a href="/resident/notifications" style="position:relative;">
+                        <i class="material-icons">notifications</i>
+                        {% if current_user.get_unread_count() > 0 %}
+                        <span class="notification-badge">{{ current_user.get_unread_count() }}</span>
+                        {% endif %}
+                    </a>
+                </li>
+                <li><a href="/profile"><i class="material-icons left">person</i>Profile</a></li>
+                <li><a href="/logout"><i class="material-icons left">exit_to_app</i>Logout</a></li>
+            {% else %}
+                <li><a href="/login"><i class="material-icons left">login</i>Login</a></li>
+                <li><a href="/signup"><i class="material-icons left">person_add</i>Sign Up</a></li>
+            {% endif %}
+        </ul>
+    </div>
+</nav>
+
+<ul class="sidenav" id="mobile-demo">
+    <li><a href="/">Home</a></li>
+    <li><a href="/menu">Menu</a></li>
+    <li><a href="/map">Live Map</a></li>
     
-      <nav class="purple">
-          <div class="nav-wrapper">
-              <a href="#!" class="brand-logo center">{% block page %}{% endblock %}</a>
-              <ul id="nav-mobile" class="left">
-                  <li><a href="/">Home</a></li>
-                  <li><a href="/users">Users Jinja</a></li>
-                  {% if is_authenticated %}
-                    <li><a href="/identify">Identify</a></li>
-                  {% endif %}
-                  <li><a href="/static/users">Users JS</a></li>
-              </ul>
-              {% if is_authenticated %}
-              <ul id="nav-mobile" class="right">
-                <li><a href="/logout">Logout</a></li>
-              </ul>
-              {% else %}
-              <form class="right navbar-form" method="POST" action="/login" style="display: flex; flex-wrap: nowrap; align-items: center; margin-right: 10px;">
-                  <div class="input-field" style="margin-right: 10px;">
-                      <input placeholder="username" value="bob" name="username" type="text" class="validate" required>
-                      <label for="username">username</label>
-                  </div>
-                  <div class="input-field" style="margin-right: 10px;">
-                      <input placeholder="password"value="bobpass" name="password" type="password" class="validate" required>
-                      <label for="password">Password</label>
-                  </div>
-                  <button type="submit" class="btn waves-effect waves-light">Login</button>
-              </form>
-              {% endif %}
-              
-          </div>
-      </nav>
-      <style>
-          .navbar-form label {
-              color: white !important;
-          }
-      </style>
+    {% if current_user %}
+        {% if current_user.type == 'Driver' %}
+        <li><a href="/driver/dashboard">Driver Dashboard</a></li>
+        <li><a href="/driver/drives">My Drives</a></li>
+        {% elif current_user.type == 'Resident' %}
+        <li><a href="/resident/dashboard">Resident Dashboard</a></li>
+        <li><a href="/resident/stops">My Stops</a></li>
+        {% endif %}
+        <li><a href="/profile">Profile</a></li>
+        <li><a href="/logout">Logout</a></li>
+    {% else %}
+        <li><a href="/login">Login</a></li>
+        <li><a href="/signup">Sign Up</a></li>
+    {% endif %}
+</ul>
 
-    <div class="container" id="content">{% block content %}{% endblock %}</div>
+<div class="container main-content">
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            {% for message in messages %}
+            <div class="card-panel teal lighten-2">
+                <span class="white-text">{{ message }}</span>
+            </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    {% block content %}{% endblock %}
+</div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
-    <script>
-       M.AutoInit();
+<footer class="page-footer" style="background:#8d6e63; padding:1rem; margin-top:2rem;">
+    <div class="container center">
+        &copy; 2025 Bread Van - Fresh Bread Delivered Daily
+    </div>
+</footer>
 
-        {% with messages = get_flashed_messages() %}
-          {% if messages %}
-              {% for message in messages %}
-              M.toast({html: '{{message}}'})
-              {% endfor %}
-          {% endif %}
-        {% endwith %}
-       
-    </script>
-  </body>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        M.AutoInit();
+        var elems = document.querySelectorAll('.sidenav');
+        var instances = M.Sidenav.init(elems);
+        
+        var toastElements = document.querySelectorAll('.toast');
+        if (toastElements.length > 0) {
+            M.Toast.init(toastElements);
+        }
+        
+        // Initialize modals
+        var modalElements = document.querySelectorAll('.modal');
+        M.Modal.init(modalElements);
+        
+        // Initialize date picker
+        var datepickerElements = document.querySelectorAll('.datepicker');
+        M.Datepicker.init(datepickerElements, {
+            format: 'yyyy-mm-dd',
+            minDate: new Date(),
+            maxDate: new Date(new Date().setDate(new Date().getDate() + 60))
+        });
+        
+        // Initialize time picker
+        var timepickerElements = document.querySelectorAll('.timepicker');
+        M.Timepicker.init(timepickerElements, {
+            twelveHour: false,
+            autoClose: true
+        });
+        
+        // Initialize dropdowns
+        var dropdownElements = document.querySelectorAll('select');
+        M.FormSelect.init(dropdownElements);
+    });
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
 </html>

@@ -1,0 +1,17 @@
+{% extends "layout.html" %}
+{% block title %}Notifications{% endblock %}
+{% block content %}
+<h4>Your Notifications</h4>
+<a href="/resident/inbox/mark_all_read" class="btn-small brown lighten-1">Mark All as Read</a>
+
+<ul class="collection">
+    {% for n in notifications %}
+    <li class="collection-item {% if not n.read %}blue lighten-5{% endif %}">
+        <span>{{ n.message }}</span>
+        <small class="right">{{ n.timestamp }}</small>
+    </li>
+    {% else %}
+    <li class="collection-item">No notifications.</li>
+    {% endfor %}
+</ul>
+{% endblock %}

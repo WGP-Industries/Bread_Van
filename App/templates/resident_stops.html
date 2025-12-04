@@ -1,0 +1,176 @@
+{% extends "layout.html" %}
+{% block title %}My Stops{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <h4>My Stop Requests</h4>
+        <div class="divider"></div>
+        
+        {% if stops %}
+        <table class="highlight responsive-table">
+            <thead>
+                <tr>
+                    <th>Stop ID</th>
+                    <th>Drive</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Status</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stop in stops %}
+                <tr>
+                    <td>#{{ stop.id }}</td>
+                    <td>
+                        Drive #{{ stop.drive.id }}<br>
+                        <small>{{ stop.drive.area.name }}, {{ stop.drive.street.name }}</small>
+                    </td>
+                    <td>{{ stop.drive.date }}</td>
+                    <td>{{ stop.drive.time }}</td>
+                    <td>
+                        {% if stop.drive.status == "Upcoming" %}
+                        <span class="badge blue">Upcoming</span>
+                        {% elif stop.drive.status == "In Progress" %}
+                        <span class="badge orange">In Progress</span>
+                        {% elif stop.drive.status == "Completed" %}
+                        <span class="badge green">Completed</span>
+                        {% else %}
+                        <span class="badge grey">{{ stop.drive.status }}</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if stop.drive.status == "Upcoming" %}
+                        <a href="/resident/drive/{{ stop.drive.id }}/cancel_stop" 
+                           class="btn-small red waves-effect waves-light"
+                           onclick="return confirm('Are you sure you want to cancel this stop request?')">
+                            Cancel
+                        </a>
+                        {% endif %}
+                        <a href="/resident/drive/{{ stop.drive.id }}" 
+                           class="btn-small blue waves-effect waves-light">
+                            View
+                        </a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        
+        <div class="center" style="margin-top: 20px;">
+            <p>Total Stops: {{ stops|length }}</p>
+        </div>
+        {% else %}
+        <div class="center" style="padding: 40px;">
+            <i class="material-icons large grey-text">pin_drop</i>
+            <h5>No Stop Requests</h5>
+            <p>You haven't requested any stops yet.</p>
+            <a href="/resident/drives" class="btn blue">Browse Upcoming Drives</a>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Stats Cards -->
+<div class="row">
+    <div class="col s12 m4">
+        <div class="card blue lighten-4">
+            <div class="card-content">
+                <span class="card-title">Upcoming Stops</span>
+                <h4 class="center">
+                    {{ stops|selectattr('drive.status', 'equalto', 'Upcoming')|list|length }}
+                </h4>
+            </div>
+        </div>
+    </div>
+    <div class="col s12 m4">
+        <div class="card orange lighten-4">
+            <div class="card-content">
+                <span class="card-title">Active Stops</span>
+                <h4 class="center">
+                    {{ stops|selectattr('drive.status', 'equalto', 'In Progress')|list|length }}
+                </h4>
+            </div>
+        </div>
+    </div>
+    <div class="col s12 m4">
+        <div class="card green lighten-4">
+            <div class="card-content">
+                <span class="card-title">Completed Stops</span>
+                <h4 class="center">
+                    {{ stops|selectattr('drive.status', 'equalto', 'Completed')|list|length }}
+                </h4>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row">
+    <div class="col s12">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Quick Actions</span>
+                <div class="row">
+                    <div class="col s12 m6">
+                        <a href="/resident/drives" class="btn blue waves-effect waves-light full-width">
+                            <i class="material-icons left">search</i>Browse Drives
+                        </a>
+                    </div>
+                    <div class="col s12 m6">
+                        <a href="/map" class="btn green waves-effect waves-light full-width">
+                            <i class="material-icons left">map</i>View Map
+                        </a>
+                    </div>
+                </div>
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col s12 m6">
+                        <a href="/resident/dashboard" class="btn grey waves-effect waves-light full-width">
+                            <i class="material-icons left">dashboard</i>Back to Dashboard
+                        </a>
+                    </div>
+                    <div class="col s12 m6">
+                        <a href="/resident/settings" class="btn amber waves-effect waves-light full-width">
+                            <i class="material-icons left">settings</i>Notification Settings
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips
+        var tooltips = document.querySelectorAll('.tooltipped');
+        M.Tooltip.init(tooltips);
+        
+        // Initialize modals
+        var modalElements = document.querySelectorAll('.modal');
+        M.Modal.init(modalElements);
+    });
+</script>
+
+<style>
+    .badge {
+        padding: 4px 8px;
+        border-radius: 10px;
+        font-size: 12px;
+        color: white;
+    }
+    
+    .badge.blue { background-color: #2196F3; }
+    .badge.orange { background-color: #FF9800; }
+    .badge.green { background-color: #4CAF50; }
+    .badge.grey { background-color: #9E9E9E; }
+    
+    table td small {
+        font-size: 0.8em;
+        color: #666;
+    }
+</style>
+{% endblock %}

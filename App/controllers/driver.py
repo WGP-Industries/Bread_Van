@@ -1,8 +1,7 @@
-from App.models import Driver, Drive, Street, Item, DriverStock
+from App.models import Driver, Drive, Street, Item, DriverStock, Resident
 from App.database import db
 from datetime import datetime, timedelta
-
-
+from math import radians, sin, cos, sqrt, atan2
 
 # DRIVER ACCOUNT MANAGEMENT
 
@@ -207,3 +206,48 @@ def driver_update_stock(driver, item_id, quantity):
 
 def driver_view_stock(driver):
     return DriverStock.query.filter_by(driverId=driver.id).all()
+
+def haversine(lat1, lon1, lat2, lon2):
+    R = 6371.0  # Earth radius in km
+
+    lat1, lon1, lat2, lon2 = map(radians, [lat1, lon1, lat2, lon2])
+    dlat = lat2 - lat1
+    dlon = lon2 - lon1
+
+    a = sin(dlat/2)**2 + cos(lat1)*cos(lat2)*sin(dlon/2)**2
+    c = 2 * atan2(sqrt(a), sqrt(1 - a))
+    return R * c
+
+def notify_residents_of_arrival(driver):
+    residents = Resident.query.filter_by(areaId=driver.areaId).all()
+
+    for r in residents:
+        # Skip if resident has no coordinates
+        if not getattr(r, 'lat', None) or not getattr(r, 'lng', None):
+            continue
+
+        distance_km = haversine(driver.last_lat, driver.last_lng, r.lat, r.lng)
+
+        if distance_km < 0.4:  # 400 meters
+            r.receive_notif(
+                "The Bread Van is near your area!",
+                "arrival_alert",
+                None
+            )
+
+    db.session.commit()
+
+def update_driver_location(driver_id, lat, lng):
+
+    driver = Driver.query.get(driver_id)
+    if not driver:
+        raise ValueError("Driver not found.")
+
+    driver.last_lat = lat
+    driver.last_lng = lng
+    db.session.commit()
+
+    # Notify residents nearby
+    notify_residents_of_arrival(driver)
+
+    return driver

@@ -1,10 +1,38 @@
-from flask import Blueprint, request, jsonify
+from flask import Blueprint, request, jsonify, render_template
+from flask_jwt_extended import jwt_required, get_jwt_identity
 from App.controllers import area as area_controller
 from App.controllers import street as street_controller
 from App.controllers import drive as drive_controller
+from App.controllers import driver as driver_controller
+from App.controllers import item as item_controller
+from App.controllers import user as user_controller
 
 common_views = Blueprint('common_views', __name__)
 
+
+
+@common_views.route('/menu', methods=['GET'])
+@jwt_required(optional=True)
+def get_menu():
+    items = item_controller.get_all_items()
+
+    uid = get_jwt_identity()
+    role = None
+    if uid:
+        user = user_controller.get_user(uid)
+        role = user.type
+
+    return render_template("menu.html", items=items, role=role)
+
+@common_views.route('/profile', methods=['GET'])
+@jwt_required()
+def get_profile():
+    return render_template("profile.html")
+
+@common_views.route('/map', methods=['GET'])
+@jwt_required()
+def get_map():
+    return render_template("map.html", lat=10.6918, lng=-61.2225)
 
 @common_views.route('/areas', methods=['GET'])
 def get_areas():
@@ -16,14 +44,21 @@ def get_areas():
 @common_views.route('/streets', methods=['GET'])
 def get_streets():
     area_id = request.args.get('area_id')
-    streets = []
-    if area_id and hasattr(street_controller, 'get_streets_for_area'):
-        streets = street_controller.get_streets_for_area(area_id)
-    elif hasattr(street_controller, 'admin_view_all_streets'):
-        streets = street_controller.admin_view_all_streets()
-    items = [s.get_json() if hasattr(s, 'get_json') else s for s in (streets or [])]
-    return jsonify({'items': items}), 200
-
+    
+    if area_id:
+        try:
+            from App.models import Street
+            streets = Street.query.filter_by(areaId=area_id).all()
+            items = [s.get_json() for s in streets]
+            return jsonify({'items': items}), 200
+        except Exception as e:
+            print(f"Error getting streets: {e}")
+            return jsonify({'items': []}), 200
+    else:
+        from App.models import Street
+        streets = Street.query.all()
+        items = [s.get_json() for s in streets]
+        return jsonify({'items': items}), 200
 
 @common_views.route('/streets/<int:street_id>/drives', methods=['GET'])
 def street_drives(street_id):
@@ -33,3 +68,13 @@ def street_drives(street_id):
         drives = drive_controller.get_drives_for_street(street_id, date)
     items = [d.get_json() if hasattr(d, 'get_json') else d for d in (drives or [])]
     return jsonify({'items': items}), 200
+
+@common_views.route('/van_location', methods=['GET'])
+def van_location():
+    
+    loc = driver_controller.get_latest_driver_location()
+
+    if not loc:
+        return jsonify({"lat": 0, "lng": 0}), 200
+
+    return jsonify({"lat": loc.last_lat, "lng": loc.last_lng}), 200

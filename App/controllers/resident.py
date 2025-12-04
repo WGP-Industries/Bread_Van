@@ -69,7 +69,15 @@ def resident_request_stop(resident, drive_id):
     if existing_stop:
         raise ValueError(f"You have already requested a stop for drive {drive_id}.")
 
-    return resident.request_stop(drive_id)
+    stop =  resident.request_stop(drive_id)
+
+    resident.receive_notif(
+        f"Your stop request for Drive {drive_id} was submitted.",
+        "stop_requested",
+        drive_id
+    )
+
+    return stop
 
 
 def resident_request_stop_from_notification(resident, drive_id):

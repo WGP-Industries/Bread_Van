@@ -1,0 +1,120 @@
+{% extends "layout.html" %}
+{% block title %}Schedule Drive{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12 m8 offset-m2">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center">Schedule New Drive</span>
+                
+                <form method="POST" action="/driver/drives/schedule">
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <select name="area_id" id="area_id" required onchange="loadStreets()">
+                                <option value="" disabled selected>Select Area</option>
+                                {% for area in areas %}
+                                <option value="{{ area.id }}">{{ area.name }}</option>
+                                {% endfor %}
+                            </select>
+                            <label>Area</label>
+                        </div>
+                        
+                        <div class="input-field col s12 m6">
+                            <select name="street_id" id="street_id" required disabled>
+                                <option value="" disabled selected>Select Street</option>
+                            </select>
+                            <label>Street</label>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="input-field col s12 m6">
+                            <input type="date" name="date" id="date" class="datepicker" required>
+                            <label for="date">Date</label>
+                        </div>
+                        
+                        <div class="input-field col s12 m6">
+                            <input type="time" name="time" id="time" class="timepicker" required>
+                            <label for="time">Time</label>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <textarea id="menu" name="menu" class="materialize-textarea"></textarea>
+                            <label for="menu">Menu Items (optional)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="row">
+                        <div class="input-field col s12">
+                            <input type="time" name="eta" id="eta">
+                            <label for="eta">Estimated Arrival Time (optional)</label>
+                        </div>
+                    </div>
+                    
+                    <div class="center">
+                        <button type="submit" class="btn blue waves-effect waves-light">
+                            <i class="material-icons left">schedule</i>Schedule Drive
+                        </button>
+                        <a href="/driver/dashboard" class="btn grey waves-effect waves-light">
+                            Cancel
+                        </a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function loadStreets() {
+    const areaId = document.getElementById('area_id').value;
+    const streetSelect = document.getElementById('street_id');
+    
+    if (areaId) {
+        fetch(`/streets?area_id=${areaId}`)
+            .then(response => response.json())
+            .then(data => {
+                streetSelect.disabled = false;
+                streetSelect.innerHTML = '<option value="" disabled selected>Select Street</option>';
+                data.items.forEach(street => {
+                    const option = document.createElement('option');
+                    option.value = street.id;
+                    option.textContent = street.name;
+                    streetSelect.appendChild(option);
+                });
+                M.FormSelect.init(streetSelect);
+            });
+    } else {
+        streetSelect.disabled = true;
+    }
+}
+
+// Initialize date picker with restrictions
+document.addEventListener('DOMContentLoaded', function() {
+    const datePicker = document.getElementById('date');
+    const today = new Date();
+    const maxDate = new Date();
+    maxDate.setDate(today.getDate() + 60);
+    
+    M.Datepicker.init(datePicker, {
+        format: 'yyyy-mm-dd',
+        minDate: today,
+        maxDate: maxDate,
+        autoClose: true
+    });
+    
+    M.Timepicker.init(document.getElementById('time'), {
+        twelveHour: false,
+        autoClose: true
+    });
+    
+    M.Timepicker.init(document.getElementById('eta'), {
+        twelveHour: false,
+        autoClose: true
+    });
+});
+</script>
+{% endblock %}

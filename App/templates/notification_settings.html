@@ -1,0 +1,203 @@
+{% extends "layout.html" %}
+{% block title %}Notification Settings{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12 m8 offset-m2">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title center">Notification Settings</span>
+                <p class="center">Customize what notifications you receive from the Bread Van system.</p>
+                
+                <form method="POST" action="/resident/settings">
+                    <!-- Drive Scheduled Notifications -->
+                    <div class="row">
+                        <div class="col s12">
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="drive_scheduled" 
+                                           {% if 'drive_scheduled' in current_prefs %}checked{% endif %} />
+                                    <span><strong>New Drive Scheduled</strong></span>
+                                </label>
+                            </p>
+                            <p class="grey-text" style="margin-left: 30px;">
+                                Receive notifications when a new bread van drive is scheduled in your area.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Menu Updated Notifications -->
+                    <div class="row">
+                        <div class="col s12">
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="menu_updated" 
+                                           {% if 'menu_updated' in current_prefs %}checked{% endif %} />
+                                    <span><strong>Menu Updates</strong></span>
+                                </label>
+                            </p>
+                            <p class="grey-text" style="margin-left: 30px;">
+                                Get notified when drivers update the menu for upcoming drives you're subscribed to.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- ETA Updated Notifications -->
+                    <div class="row">
+                        <div class="col s12">
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="eta_updated" 
+                                           {% if 'eta_updated' in current_prefs %}checked{% endif %} />
+                                    <span><strong>ETA Updates</strong></span>
+                                </label>
+                            </p>
+                            <p class="grey-text" style="margin-left: 30px;">
+                                Receive notifications when estimated arrival times change for drives you're subscribed to.
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Arrival Alert Notifications -->
+                    <div class="row">
+                        <div class="col s12">
+                            <p>
+                                <label>
+                                    <input type="checkbox" name="arrival_alert" 
+                                           {% if 'arrival_alert' in current_prefs %}checked{% endif %} />
+                                    <span><strong>Arrival Alerts</strong></span>
+                                </label>
+                            </p>
+                            <p class="grey-text" style="margin-left: 30px;">
+                                Get alerted when the bread van is approaching your area (within 400 meters).
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Stop Request Notifications -->
+                    <div class="row">
+                        <div class="col s12">
+                            <p>
+                                <label>
+                                    <input type="checkbox" checked disabled />
+                                    <span><strong>Stop Request Confirmation</strong></span>
+                                </label>
+                            </p>
+                            <p class="grey-text" style="margin-left: 30px;">
+                                Confirmation when you request or cancel a stop. <em>(Always enabled)</em>
+                            </p>
+                        </div>
+                    </div>
+                    
+                    <!-- Save Button -->
+                    <div class="row">
+                        <div class="col s12 center">
+                            <button type="submit" class="btn blue waves-effect waves-light">
+                                <i class="material-icons left">save</i>Save Settings
+                            </button>
+                            <a href="/resident/dashboard" class="btn grey waves-effect waves-light">
+                                Cancel
+                            </a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <!-- Notification Management -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Manage Notifications</span>
+                
+                <div class="row">
+                    <div class="col s12 m6">
+                        <a href="/resident/notifications" class="btn green waves-effect waves-light full-width">
+                            <i class="material-icons left">inbox</i>View All Notifications
+                        </a>
+                    </div>
+                    <div class="col s12 m6">
+                        <a href="/resident/notifications/mark_all_read" class="btn orange waves-effect waves-light full-width">
+                            <i class="material-icons left">mark_email_read</i>Mark All as Read
+                        </a>
+                    </div>
+                </div>
+                
+                <div class="row" style="margin-top: 10px;">
+                    <div class="col s12">
+                        <a href="/resident/dashboard" class="btn grey waves-effect waves-light full-width">
+                            <i class="material-icons left">dashboard</i>Back to Dashboard
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Information Card -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">How Notifications Work</span>
+                <ul class="browser-default">
+                    <li>Notifications are stored in your inbox for up to 50 messages.</li>
+                    <li>You can view all notifications by clicking "View All Notifications".</li>
+                    <li>Notifications will appear in the notification bell icon in the navigation bar.</li>
+                    <li>You can subscribe to specific drives to receive updates about menu changes and ETAs.</li>
+                    <li>Arrival alerts require location sharing to be enabled.</li>
+                </ul>
+                
+                <div class="divider" style="margin: 20px 0;"></div>
+                
+                <h6>Current Status:</h6>
+                <p><strong>Inbox Size:</strong> {{ current_user.inbox|length if current_user.inbox else 0 }}/50</p>
+                <p><strong>Unread Notifications:</strong> {{ current_user.get_unread_count() }}</p>
+                <p><strong>Subscribed Drives:</strong> {{ current_user.subscribed_drives|length }}</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Initialize tooltips if any
+        var tooltips = document.querySelectorAll('.tooltipped');
+        M.Tooltip.init(tooltips);
+        
+        // Add some client-side validation
+        const form = document.querySelector('form');
+        form.addEventListener('submit', function(e) {
+            // You can add custom validation here if needed
+            console.log('Saving notification preferences...');
+        });
+    });
+</script>
+
+<style>
+    .card-title {
+        margin-bottom: 20px;
+    }
+    
+    p[class*="grey-text"] {
+        font-size: 0.9em;
+        margin-top: -5px;
+    }
+    
+    .divider {
+        margin: 20px 0;
+    }
+    
+    .btn.full-width {
+        width: 100%;
+        margin: 5px 0;
+    }
+    
+    .collection a.collection-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .collection a.collection-item i {
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}

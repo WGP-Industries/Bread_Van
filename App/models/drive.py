@@ -28,16 +28,20 @@ class Drive(db.Model, SubjectMixin):
         self.eta = eta
 
     def get_json(self):
+        date_str = self.date.isoformat() if self.date else None
+        time_str = self.time.strftime("%H:%M") if self.time else None
+        eta_str = self.eta.strftime("%H:%M") if self.eta else None
+        
         return {
             'id': self.id,
             'driverId': self.driverId,
             'areaId': self.areaId,
             'streetId': self.streetId,
-            'date': self.date,
-            'time': self.time,
+            'date': date_str,
+            'time': time_str,
             'status': self.status,
             'menu': self.menu,
-            'eta': self.eta
+            'eta': eta_str
         }
 
     def set_menu_and_eta(self, menu, eta):

@@ -17,6 +17,8 @@ class Resident(User):
     inbox = db.Column(MutableList.as_mutable(JSON), default=[])
     notification_preferences = db.Column(MutableList.as_mutable(JSON), default=["drive_scheduled", "menu_updated", "eta_updated"])
     subscribed_drives = db.Column(MutableList.as_mutable(JSON), default=[])
+    lat = db.Column(db.Float, nullable=True)
+    lng = db.Column(db.Float, nullable=True)
 
     area = db.relationship("Area", backref='residents')
     stops = db.relationship('Stop', backref='resident')

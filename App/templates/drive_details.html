@@ -1,0 +1,183 @@
+{% extends "layout.html" %}
+{% block title %}Drive #{{ drive.id }} - Bread Van{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <a href="/driver/drives" class="btn-flat waves-effect">
+            <i class="material-icons left">arrow_back</i>Back to Drives
+        </a>
+        <h4>Drive #{{ drive.id }} Details</h4>
+        <div class="divider"></div>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Drive Information Card -->
+    <div class="col s12 m8">
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">
+                    {{ drive.area.name }}, {{ drive.street.name }}
+                    <span class="badge {{ drive.status|lower }}-badge">{{ drive.status }}</span>
+                </span>
+                
+                <div class="row">
+                    <div class="col s6">
+                        <p><strong>Date:</strong> {{ drive.date }}</p>
+                        <p><strong>Scheduled Time:</strong> {{ drive.time }}</p>
+                        {% if drive.eta %}
+                        <p><strong>ETA:</strong> {{ drive.eta }}</p>
+                        {% endif %}
+                    </div>
+                    <div class="col s6">
+                        <p><strong>Driver ID:</strong> {{ drive.driverId }}</p>
+                        <p><strong>Area ID:</strong> {{ drive.areaId }}</p>
+                        <p><strong>Street ID:</strong> {{ drive.streetId }}</p>
+                    </div>
+                </div>
+                
+                {% if drive.menu %}
+                <div class="section">
+                    <h6>Menu</h6>
+                    <div class="chip">{{ drive.menu }}</div>
+                </div>
+                {% endif %}
+            </div>
+            
+            <div class="card-action">
+                {% if drive.status == "Upcoming" %}
+                <a href="/driver/drives/{{ drive.id }}/start" class="btn green waves-effect waves-light">
+                    <i class="material-icons left">play_arrow</i>Start Drive
+                </a>
+                <a href="/driver/drives/{{ drive.id }}/cancel" class="btn red waves-effect waves-light">
+                    <i class="material-icons left">cancel</i>Cancel Drive
+                </a>
+                <a href="/driver/drives/{{ drive.id }}/edit" class="btn blue waves-effect waves-light">
+                    <i class="material-icons left">edit</i>Edit Drive
+                </a>
+                {% elif drive.status == "In Progress" %}
+                <a href="/driver/drives/{{ drive.id }}/end" class="btn red waves-effect waves-light">
+                    <i class="material-icons left">stop</i>End Drive
+                </a>
+                <a href="/driver/drives/{{ drive.id }}/requested-stops" class="btn amber waves-effect waves-light">
+                    <i class="material-icons left">list</i>View Stops ({{ drive.stops|length }})
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        
+        <!-- Stop Requests -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Stop Requests</span>
+                {% if drive.stops %}
+                <table class="highlight">
+                    <thead>
+                        <tr>
+                            <th>Stop ID</th>
+                            <th>Resident</th>
+                            <th>House #</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for stop in drive.stops %}
+                        <tr>
+                            <td>#{{ stop.id }}</td>
+                            <td>{{ stop.resident.username }}</td>
+                            <td>{{ stop.resident.houseNumber }}</td>
+                            <td>
+                                <a href="/map?stop={{ stop.id }}" class="btn-small blue">
+                                    <i class="material-icons tiny">location_on</i>Map
+                                </a>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+                {% else %}
+                <p class="grey-text center">No stop requests yet.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <!-- Quick Actions Sidebar -->
+    <div class="col s12 m4">
+        <div class="card">
+        
+        <!-- Drive Statistics -->
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Drive Stats</span>
+                <p><strong>Total Stops:</strong> {{ drive.stops|length }}</p>
+                <p><strong>Status:</strong> {{ drive.status }}</p>
+                <p><strong>Created:</strong> {{ drive.date }}</p>
+            </div>
+        </div>
+        
+        <!-- Live Updates -->
+        {% if drive.status == "In Progress" %}
+        <div class="card">
+            <div class="card-content">
+                <span class="card-title">Live Updates</span>
+                <div id="live-updates">
+                    <p class="center">Drive in progress...</p>
+                    <div class="progress">
+                        <div class="determinate" style="width: 70%"></div>
+                    </div>
+                    <p class="center">Approximately 70% complete</p>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+{% endblock %}
+
+{% block scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        // Update live status if drive is in progress
+        {% if drive.status == "In Progress" %}
+        function updateLiveStatus() {
+            fetch('/driver/drives/{{ drive.id }}/status')
+                .then(response => response.json())
+                .then(data => {
+                    // Update progress bar or other elements
+                    console.log('Live update received:', data);
+                });
+        }
+        
+        // Update every 10 seconds
+        setInterval(updateLiveStatus, 10000);
+        {% endif %}
+    });
+</script>
+
+<style>
+    .upcoming-badge { background-color: #2196F3; }
+    .in-progress-badge { background-color: #FF9800; }
+    .completed-badge { background-color: #4CAF50; }
+    .cancelled-badge { background-color: #F44336; }
+    
+    .badge {
+        padding: 5px 10px;
+        border-radius: 12px;
+        color: white;
+        font-size: 12px;
+        float: right;
+    }
+    
+    .collection a.collection-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .collection a.collection-item i {
+        margin-right: 10px;
+    }
+</style>
+{% endblock %}
