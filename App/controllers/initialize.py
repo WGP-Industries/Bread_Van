@@ -69,9 +69,17 @@ def initialize():
     resident3 = resident_create(username="john",
                          password="johnpass",
                          areaId=area2.id,
-                         streetId=street21.id,
+                         streetId=street22.id,
                          houseNumber=13)
-    db.session.add_all([resident1, resident2, resident3])
+    
+    # Added new resident with house number 6
+    resident4 = resident_create(username="sam",
+                         password="sampass",
+                         areaId=area1.id,
+                         streetId=street13.id,
+                         houseNumber=6)  # Adding number 6 here
+    
+    db.session.add_all([resident1, resident2, resident3, resident4])  # Updated to include resident4
     db.session.commit()
 
     #Creating Drives and Stops

@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block title %}Stop Requests for Drive #{{ drive.id }}{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col s12">
+        <h4>Stop Requests for Drive #{{ drive.id }}</h4>
+        <p><strong>Location:</strong> {{ drive.area.name }}, {{ drive.street.name }}</p>
+        <p><strong>Date:</strong> {{ drive.date }} at {{ drive.time }}</p>
+        
+        <h5>Requested Stops ({{ stops|length }})</h5>
+        {% if stops %}
+        <table class="highlight">
+            <thead>
+                <tr>
+                    <th>Stop ID</th>
+                    <th>Resident</th>
+                    <th>House #</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for stop in stops %}
+                <tr>
+                    <td>#{{ stop.id }}</td>
+                    <td>{{ stop.resident.username }}</td>
+                    <td>{{ stop.resident.houseNumber }}</td>
+                    <td>
+                        <a href="/map?stop={{ stop.id }}" class="btn-small blue">View on Map</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+        {% else %}
+        <p class="grey-text">No stop requests yet.</p>
+        {% endif %}
+        
+        <a href="/driver/dashboard" class="btn grey">Back to Dashboard</a>
+    </div>
+</div>
+{% endblock %}

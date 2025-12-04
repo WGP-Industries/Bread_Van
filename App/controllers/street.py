@@ -39,3 +39,6 @@ def delete_street(areaId, street_id):
 def get_streets_by_name(name):
     return Street.query.filter(Street.name.ilike(f"%{name}%")).all()
 
+def get_streets_by_area(area_id):
+    return Street.query.filter_by(areaId=area_id).all()
+

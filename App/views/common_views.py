@@ -44,14 +44,21 @@ def get_areas():
 @common_views.route('/streets', methods=['GET'])
 def get_streets():
     area_id = request.args.get('area_id')
-    streets = []
-    if area_id and hasattr(street_controller, 'get_streets_for_area'):
-        streets = street_controller.get_streets_for_area(area_id)
-    elif hasattr(street_controller, 'admin_view_all_streets'):
-        streets = street_controller.admin_view_all_streets()
-    items = [s.get_json() if hasattr(s, 'get_json') else s for s in (streets or [])]
-    return jsonify({'items': items}), 200
-
+    
+    if area_id:
+        try:
+            from App.models import Street
+            streets = Street.query.filter_by(areaId=area_id).all()
+            items = [s.get_json() for s in streets]
+            return jsonify({'items': items}), 200
+        except Exception as e:
+            print(f"Error getting streets: {e}")
+            return jsonify({'items': []}), 200
+    else:
+        from App.models import Street
+        streets = Street.query.all()
+        items = [s.get_json() for s in streets]
+        return jsonify({'items': items}), 200
 
 @common_views.route('/streets/<int:street_id>/drives', methods=['GET'])
 def street_drives(street_id):
